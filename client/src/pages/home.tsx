@@ -66,8 +66,19 @@ export default function Home() {
       {/* Hero Carousel */}
       {featured.length > 0 && <HeroCarousel shows={featured} />}
 
-      {/* Header Ad */}
-      <div className="container mx-auto px-4 py-6">
+      {/* SEO Content Section */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto text-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">
+            Watch Free Movies Online & Stream TV Shows Instantly
+          </h1>
+          <p className="text-lg text-muted-foreground mb-2">
+            Best free streaming movies website with HD quality. Watch Game of Thrones, The Boys, and latest web series online free. No subscription required.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Stream thousands of movies and TV shows online free in HD. Watch popular series like Game of Thrones, The Witcher, Breaking Bad, and more without ads or subscription.
+          </p>
+        </div>
         <AdPlaceholder type="leaderboard" />
       </div>
 
@@ -75,7 +86,7 @@ export default function Home() {
       <div className="container mx-auto py-8 space-y-12">
         {trending.length > 0 && (
           <ContentRow
-            title="Trending Now"
+            title="🔥 Trending Web Series & Movies to Watch Online Free"
             shows={trending}
             orientation="landscape"
           />
@@ -83,7 +94,7 @@ export default function Home() {
 
         {continueWatching.length > 0 && (
           <ContentRow
-            title="Continue Watching"
+            title="Continue Watching Your Favorite Shows"
             shows={continueWatching}
             orientation="landscape"
             showProgress={progressMap}
@@ -91,25 +102,25 @@ export default function Home() {
         )}
 
         {action.length > 0 && (
-          <ContentRow title="Action & Thriller" shows={action} />
+          <ContentRow title="Watch Action Movies & Thriller Series Online" shows={action} />
         )}
 
-        {drama.length > 0 && <ContentRow title="Drama & Romance" shows={drama} />}
+        {drama.length > 0 && <ContentRow title="Stream Drama & Romance Series Free" shows={drama} />}
 
         {/* Sidebar Ad - In-feed placement */}
         <div className="px-4 md:px-6">
           <AdPlaceholder type="rectangle" />
         </div>
 
-        {comedy.length > 0 && <ContentRow title="Comedy" shows={comedy} />}
+        {comedy.length > 0 && <ContentRow title="Watch Comedy Shows & Movies Online Free" shows={comedy} />}
 
         {horror.length > 0 && (
-          <ContentRow title="Horror & Mystery" shows={horror} />
+          <ContentRow title="Stream Horror & Mystery Series in HD" shows={horror} />
         )}
 
         {shows && shows.length > 0 && (
           <ContentRow
-            title="Recently Added"
+            title="Latest Movies & Web Series Added - Watch Now"
             shows={shows.slice(0, 12)}
             orientation="landscape"
           />
