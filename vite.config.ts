@@ -20,6 +20,27 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
+    // Performance optimizations
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.logs in production
+        drop_debugger: true,
+      },
+    },
+    rollupOptions: {
+      output: {
+        // Code splitting for better caching
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
+          'router': ['wouter'],
+          'ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
+          'query': ['@tanstack/react-query'],
+        },
+      },
+    },
+    // Chunk size warnings
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     fs: {

@@ -16,6 +16,19 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Add caching headers for static assets
+app.use((req, res, next) => {
+  // Cache static assets for 1 year
+  if (req.url.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+  // Cache HTML for 1 hour
+  else if (req.url.match(/\.html$/)) {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
