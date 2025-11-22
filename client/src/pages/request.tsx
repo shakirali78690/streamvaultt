@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 export default function RequestContent() {
   const { toast } = useToast();
@@ -16,6 +17,16 @@ export default function RequestContent() {
     description: "",
     reason: "",
     email: "",
+  });
+
+  // Fetch top requests
+  const { data: topRequests = [], refetch } = useQuery({
+    queryKey: ['/api/top-requests'],
+    queryFn: async () => {
+      const response = await fetch('/api/top-requests');
+      if (!response.ok) throw new Error('Failed to fetch top requests');
+      return response.json();
+    },
   });
 
   const contentTypes = [
@@ -65,8 +76,13 @@ export default function RequestContent() {
       if (data.success) {
         toast({
           title: "Request Submitted!",
-          description: "Thank you! We'll review your content request.",
+          description: data.requestCount > 1 
+            ? `${data.requestCount} people have requested this!` 
+            : "Thank you! We'll review your content request.",
         });
+
+        // Refetch top requests to update the list
+        refetch();
 
         // Reset form
         setFormData({
@@ -274,27 +290,27 @@ export default function RequestContent() {
           </form>
 
           {/* Popular Requests */}
-          <div className="mt-12 p-6 rounded-lg bg-card border border-border">
-            <h3 className="font-semibold mb-4">📊 Most Requested Content</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between items-center">
-                <span>The Last of Us</span>
-                <span className="text-muted-foreground">127 requests</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>House of the Dragon</span>
-                <span className="text-muted-foreground">98 requests</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Wednesday</span>
-                <span className="text-muted-foreground">84 requests</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Peaky Blinders</span>
-                <span className="text-muted-foreground">76 requests</span>
+          {topRequests.length > 0 && (
+            <div className="mt-12 p-6 rounded-lg bg-card border border-border">
+              <h3 className="font-semibold mb-4">📊 Most Requested Content</h3>
+              <div className="space-y-2 text-sm">
+                {topRequests.map((request: any) => (
+                  <div key={request.id} className="flex justify-between items-center">
+                    <span className="flex items-center gap-2">
+                      {request.contentType === 'series' && <Tv className="w-4 h-4" />}
+                      {request.contentType === 'movie' && <Film className="w-4 h-4" />}
+                      {request.contentType === 'episode' && <Star className="w-4 h-4" />}
+                      {request.title}
+                      {request.year && <span className="text-muted-foreground">({request.year})</span>}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {request.requestCount} {request.requestCount === 1 ? 'request' : 'requests'}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Info Box */}
           <div className="mt-8 p-6 rounded-lg bg-muted">

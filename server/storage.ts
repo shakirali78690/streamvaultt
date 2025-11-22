@@ -11,6 +11,30 @@ interface ProgressEntry extends ViewingProgress {
   id: string;
 }
 
+export interface ContentRequest {
+  id: string;
+  contentType: string;
+  title: string;
+  year?: string;
+  genre?: string;
+  description?: string;
+  reason?: string;
+  email?: string;
+  requestCount: number;
+  createdAt: string;
+}
+
+export interface IssueReport {
+  id: string;
+  issueType: string;
+  title: string;
+  description: string;
+  url?: string;
+  email?: string;
+  status: 'pending' | 'resolved';
+  createdAt: string;
+}
+
 export interface IStorage {
   // Shows
   getAllShows(): Promise<Show[]>;
@@ -39,6 +63,15 @@ export interface IStorage {
   // Viewing Progress (simulated per-session storage)
   getViewingProgress(sessionId: string): Promise<ProgressEntry[]>;
   updateViewingProgress(sessionId: string, progress: ViewingProgress): Promise<ProgressEntry>;
+
+  // Content Requests
+  getAllContentRequests(): Promise<ContentRequest[]>;
+  getTopContentRequests(limit: number): Promise<ContentRequest[]>;
+  createContentRequest(request: Omit<ContentRequest, 'id' | 'requestCount' | 'createdAt'>): Promise<ContentRequest>;
+
+  // Issue Reports
+  getAllIssueReports(): Promise<IssueReport[]>;
+  createIssueReport(report: Omit<IssueReport, 'id' | 'status' | 'createdAt'>): Promise<IssueReport>;
 }
 
 export class MemStorage implements IStorage {
@@ -47,6 +80,8 @@ export class MemStorage implements IStorage {
   private watchlists: Map<string, Map<string, WatchlistEntry>>;
   private viewingProgress: Map<string, Map<string, ProgressEntry>>;
   private categories: Category[];
+  private contentRequests: Map<string, ContentRequest>;
+  private issueReports: Map<string, IssueReport>;
   private dataFile: string;
 
   constructor() {
@@ -55,6 +90,8 @@ export class MemStorage implements IStorage {
     this.episodes = new Map();
     this.watchlists = new Map();
     this.viewingProgress = new Map();
+    this.contentRequests = new Map();
+    this.issueReports = new Map();
     this.categories = [
       { id: "action", name: "Action & Thriller", slug: "action" },
       { id: "drama", name: "Drama & Romance", slug: "drama" },
@@ -531,6 +568,62 @@ export class MemStorage implements IStorage {
         }
       }
     });
+  }
+
+  // Content Requests
+  async getAllContentRequests(): Promise<ContentRequest[]> {
+    return Array.from(this.contentRequests.values());
+  }
+
+  async getTopContentRequests(limit: number): Promise<ContentRequest[]> {
+    const requests = Array.from(this.contentRequests.values());
+    return requests
+      .sort((a, b) => b.requestCount - a.requestCount)
+      .slice(0, limit);
+  }
+
+  async createContentRequest(request: Omit<ContentRequest, 'id' | 'requestCount' | 'createdAt'>): Promise<ContentRequest> {
+    // Check if similar request already exists
+    const existing = Array.from(this.contentRequests.values()).find(
+      r => r.title.toLowerCase() === request.title.toLowerCase() && r.contentType === request.contentType
+    );
+
+    if (existing) {
+      // Increment request count
+      existing.requestCount++;
+      this.saveData();
+      return existing;
+    }
+
+    // Create new request
+    const id = randomUUID();
+    const newRequest: ContentRequest = {
+      ...request,
+      id,
+      requestCount: 1,
+      createdAt: new Date().toISOString(),
+    };
+    this.contentRequests.set(id, newRequest);
+    this.saveData();
+    return newRequest;
+  }
+
+  // Issue Reports
+  async getAllIssueReports(): Promise<IssueReport[]> {
+    return Array.from(this.issueReports.values());
+  }
+
+  async createIssueReport(report: Omit<IssueReport, 'id' | 'status' | 'createdAt'>): Promise<IssueReport> {
+    const id = randomUUID();
+    const newReport: IssueReport = {
+      ...report,
+      id,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    this.issueReports.set(id, newReport);
+    this.saveData();
+    return newReport;
   }
 }
 

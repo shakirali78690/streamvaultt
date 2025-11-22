@@ -659,23 +659,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { issueType, title, description, url, email } = req.body;
       
-      // Log the report (in production, save to database or send email)
-      console.log('📝 Issue Report Received:');
+      // Save to storage
+      const report = await storage.createIssueReport({
+        issueType,
+        title,
+        description,
+        url,
+        email,
+      });
+      
+      console.log('📝 Issue Report Received:', report.id);
       console.log('Type:', issueType);
       console.log('Title:', title);
-      console.log('Description:', description);
-      console.log('URL:', url);
-      console.log('Email:', email);
       console.log('---');
-      
-      // In production, you would:
-      // 1. Save to database
-      // 2. Send email notification to admin
-      // 3. Create a ticket in support system
       
       res.json({ 
         success: true, 
-        message: 'Report submitted successfully' 
+        message: 'Report submitted successfully',
+        reportId: report.id
       });
     } catch (error: any) {
       console.error('Error submitting report:', error);
@@ -691,25 +692,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { contentType, title, year, genre, description, reason, email } = req.body;
       
-      // Log the request (in production, save to database)
-      console.log('🎬 Content Request Received:');
-      console.log('Type:', contentType);
-      console.log('Title:', title);
-      console.log('Year:', year);
-      console.log('Genre:', genre);
-      console.log('Description:', description);
-      console.log('Reason:', reason);
-      console.log('Email:', email);
-      console.log('---');
+      // Save to storage (increments count if duplicate)
+      const request = await storage.createContentRequest({
+        contentType,
+        title,
+        year,
+        genre,
+        description,
+        reason,
+        email,
+      });
       
-      // In production, you would:
-      // 1. Save to database with request counter
-      // 2. Send confirmation email to user
-      // 3. Notify content team
+      console.log('🎬 Content Request:', request.title, `(${request.requestCount} requests)`);
       
       res.json({ 
         success: true, 
-        message: 'Content request submitted successfully' 
+        message: 'Content request submitted successfully',
+        requestCount: request.requestCount
       });
     } catch (error: any) {
       console.error('Error submitting content request:', error);
@@ -717,6 +716,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         message: 'Failed to submit content request' 
       });
+    }
+  });
+
+  // Get top content requests
+  app.get("/api/top-requests", async (_req, res) => {
+    try {
+      const topRequests = await storage.getTopContentRequests(5);
+      res.json(topRequests);
+    } catch (error: any) {
+      console.error('Error fetching top requests:', error);
+      res.status(500).json({ error: 'Failed to fetch top requests' });
     }
   });
 
