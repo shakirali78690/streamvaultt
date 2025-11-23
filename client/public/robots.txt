@@ -19,8 +19,10 @@ Disallow: /api/
 
 # Sitemaps
 Sitemap: https://streamvault.live/sitemap.xml
+Sitemap: https://streamvault.live/sitemap-main.xml
 Sitemap: https://streamvault.live/sitemap-shows.xml
 Sitemap: https://streamvault.live/sitemap-categories.xml
+Sitemap: https://streamvault.live/sitemap-episodes.xml
 
 # Crawl-delay for polite crawling
 Crawl-delay: 1

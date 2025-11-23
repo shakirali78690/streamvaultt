@@ -23,6 +23,10 @@ export function setupSitemaps(app: Express, storage: IStorage) {
     <loc>${baseUrl}/sitemap-categories.xml</loc>
     <lastmod>${lastmod}</lastmod>
   </sitemap>
+  <sitemap>
+    <loc>${baseUrl}/sitemap-episodes.xml</loc>
+    <lastmod>${lastmod}</lastmod>
+  </sitemap>
 </sitemapindex>`;
 
     res.header("Content-Type", "application/xml");
@@ -137,5 +141,50 @@ export function setupSitemaps(app: Express, storage: IStorage) {
     res.send(xml);
   });
 
-  console.log("✅ Sitemaps configured");
+  // Episodes sitemap - all individual episode watch pages
+  app.get("/sitemap-episodes.xml", async (_req, res) => {
+    const lastmod = new Date().toISOString().split("T")[0];
+    const shows = await storage.getAllShows();
+    
+    let allEpisodeUrls: string[] = [];
+
+    // Get all episodes for all shows
+    for (const show of shows) {
+      const episodes = await storage.getEpisodesByShowId(show.id);
+      
+      const episodeUrls = episodes.map((episode) => {
+        const episodeTitle = `${show.title} - S${episode.season}E${episode.episodeNumber}`;
+        const escapedTitle = episodeTitle
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&apos;");
+
+        return `
+  <url>
+    <loc>${baseUrl}/watch/${show.slug}/${episode.season}/${episode.episodeNumber}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>${episode.thumbnailUrl}</image:loc>
+      <image:title>${escapedTitle}</image:title>
+    </image:image>
+  </url>`;
+      });
+
+      allEpisodeUrls = allEpisodeUrls.concat(episodeUrls);
+    }
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${allEpisodeUrls.join("")}
+</urlset>`;
+
+    res.header("Content-Type", "application/xml");
+    res.send(xml);
+  });
+
+  console.log("✅ Sitemaps configured with episodes");
 }
