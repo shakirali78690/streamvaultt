@@ -79,7 +79,79 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  app.use("*", (req, res) => {
+    // Check if request is from a social media crawler
+    const userAgent = req.headers['user-agent'] || '';
+    const isSocialCrawler = 
+      userAgent.includes('facebookexternalhit') ||
+      userAgent.includes('Facebot') ||
+      userAgent.includes('Twitterbot') ||
+      userAgent.includes('LinkedInBot') ||
+      userAgent.includes('WhatsApp') ||
+      userAgent.includes('TelegramBot') ||
+      userAgent.includes('Slackbot') ||
+      userAgent.includes('Discordbot');
+
+    // Only inject meta tags for social crawlers on show pages
+    if (isSocialCrawler && req.path.startsWith('/show/')) {
+      const showMatch = req.path.match(/^\/show\/([^\/]+)/);
+      
+      if (showMatch) {
+        const slug = showMatch[1];
+        
+        // Import storage dynamically to avoid circular dependency
+        import('./storage.js').then(({ storage }) => {
+          storage.getShowBySlug(slug).then(show => {
+            if (show) {
+              const indexPath = path.resolve(distPath, "index.html");
+              let html = fs.readFileSync(indexPath, 'utf-8');
+
+              // Escape HTML entities
+              const escapeHtml = (str: string) => str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+
+              const title = escapeHtml(show.title);
+              const description = escapeHtml(show.description.slice(0, 200));
+              const url = `https://streamvault.live/show/${show.slug}`;
+              const image = show.backdropUrl;
+
+              // Inject show-specific meta tags
+              const metaTags = `
+    <!-- Dynamic Show Meta Tags for Social Sharing -->
+    <meta property="og:title" content="${title} - Watch Online Free | StreamVault">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="${image}">
+    <meta property="og:url" content="${url}">
+    <meta property="og:type" content="video.tv_show">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${title} - Watch Online Free">
+    <meta name="twitter:description" content="${description}">
+    <meta name="twitter:image" content="${image}">
+    <title>${title} - Watch Online Free | StreamVault</title>`;
+
+              // Replace the closing </head> tag
+              html = html.replace('</head>', `${metaTags}\n  </head>`);
+
+              res.setHeader('Content-Type', 'text/html');
+              res.send(html);
+            } else {
+              res.sendFile(path.resolve(distPath, "index.html"));
+            }
+          }).catch(() => {
+            res.sendFile(path.resolve(distPath, "index.html"));
+          });
+        }).catch(() => {
+          res.sendFile(path.resolve(distPath, "index.html"));
+        });
+        return;
+      }
+    }
+
+    // For all other requests, serve index.html
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

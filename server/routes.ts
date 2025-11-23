@@ -5,7 +5,6 @@ import { z } from "zod";
 import { watchlistSchema, viewingProgressSchema } from "@shared/schema";
 import type { InsertEpisode } from "@shared/schema";
 import { readFileSync, existsSync } from "fs";
-import path from "path";
 import { setupSitemaps } from "./sitemap";
 
 // Admin credentials (in production, use environment variables and hashed passwords)
@@ -34,101 +33,6 @@ function requireAdmin(req: any, res: any, next: any) {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup dynamic sitemaps
   setupSitemaps(app, storage);
-
-  // Middleware to inject meta tags for social media crawlers ONLY
-  app.use(async (req, res, next) => {
-    // Only handle GET requests for HTML pages
-    if (req.method !== 'GET') {
-      return next();
-    }
-
-    // Skip API routes, assets, and files with extensions
-    const requestPath = req.path;
-    if (
-      requestPath.startsWith('/api/') ||
-      requestPath.startsWith('/assets/') ||
-      requestPath.startsWith('/src/') ||
-      requestPath.startsWith('/@') ||
-      requestPath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json|xml)$/i)
-    ) {
-      return next();
-    }
-
-    // Check if request is from a social media crawler
-    const userAgent = req.headers['user-agent'] || '';
-    const isSocialCrawler = 
-      userAgent.includes('facebookexternalhit') ||
-      userAgent.includes('Facebot') ||
-      userAgent.includes('Twitterbot') ||
-      userAgent.includes('LinkedInBot') ||
-      userAgent.includes('WhatsApp') ||
-      userAgent.includes('TelegramBot') ||
-      userAgent.includes('Slackbot') ||
-      userAgent.includes('Discordbot');
-
-    // Only inject meta tags for social crawlers on show pages
-    if (isSocialCrawler && requestPath.startsWith('/show/')) {
-      const showMatch = requestPath.match(/^\/show\/([^\/]+)/);
-      
-      if (showMatch) {
-        const slug = showMatch[1];
-        
-        try {
-          const show = await storage.getShowBySlug(slug);
-          
-          if (show) {
-            // Read index.html
-            const isProduction = process.env.NODE_ENV === 'production';
-            const indexPath = isProduction 
-              ? path.join(import.meta.dirname, 'public', 'index.html')
-              : path.join(import.meta.dirname, '..', 'client', 'index.html');
-            
-            if (existsSync(indexPath)) {
-              let html = readFileSync(indexPath, 'utf-8');
-
-              // Escape HTML entities
-              const escapeHtml = (str: string) => str
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-
-              const title = escapeHtml(show.title);
-              const description = escapeHtml(show.description.slice(0, 200));
-              const url = `https://streamvault.live/show/${show.slug}`;
-              const image = show.backdropUrl;
-
-              // Inject show-specific meta tags
-              const metaTags = `
-    <!-- Dynamic Show Meta Tags for Social Sharing -->
-    <meta property="og:title" content="${title} - Watch Online Free | StreamVault">
-    <meta property="og:description" content="${description}">
-    <meta property="og:image" content="${image}">
-    <meta property="og:url" content="${url}">
-    <meta property="og:type" content="video.tv_show">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${title} - Watch Online Free">
-    <meta name="twitter:description" content="${description}">
-    <meta name="twitter:image" content="${image}">
-    <title>${title} - Watch Online Free | StreamVault</title>`;
-
-              // Replace the closing </head> tag
-              html = html.replace('</head>', `${metaTags}\n  </head>`);
-
-              res.setHeader('Content-Type', 'text/html');
-              return res.send(html);
-            }
-          }
-        } catch (error) {
-          console.error('Error injecting meta tags:', error);
-        }
-      }
-    }
-
-    // For all other requests, continue normally
-    next();
-  });
 
   // Get all shows
   app.get("/api/shows", async (_req, res) => {
