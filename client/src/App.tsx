@@ -24,6 +24,7 @@ import Help from "@/pages/help";
 import FAQ from "@/pages/faq";
 import Report from "@/pages/report";
 import Request from "@/pages/request";
+import Movies from "@/pages/movies";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -50,7 +51,7 @@ function Router() {
           <Route path="/report" component={Report} />
           <Route path="/request" component={Request} />
           <Route path="/series" component={Home} />
-          <Route path="/movies" component={Home} />
+          <Route path="/movies" component={Movies} />
           <Route path="/trending" component={Home} />
           <Route component={NotFound} />
         </Switch>

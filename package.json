@@ -15,7 +15,11 @@
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "vercel-build": "vite build",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "update-shows": "tsx scripts/update-shows-from-tmdb.ts",
+    "update-images": "tsx scripts/update-images-from-tmdb.ts",
+    "update-episodes": "tsx scripts/update-episode-thumbnails.ts",
+    "check-failed": "tsx scripts/check-failed-shows.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -54,6 +58,7 @@
     "cmdk": "^1.1.1",
     "connect-pg-simple": "^10.0.0",
     "date-fns": "^3.6.0",
+    "dotenv": "^17.2.3",
     "drizzle-orm": "^0.39.1",
     "drizzle-zod": "^0.7.0",
     "embla-carousel-react": "^8.6.0",
