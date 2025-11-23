@@ -70,15 +70,28 @@ export async function setupVite(app: Express, server: Server) {
 export function serveStatic(app: Express) {
   const distPath = path.resolve(import.meta.dirname, "public");
 
+  console.log(`[Static] Serving static files from: ${distPath}`);
+  console.log(`[Static] Directory exists: ${fs.existsSync(distPath)}`);
+  
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`,
     );
   }
 
+  // List assets directory contents for debugging
+  const assetsPath = path.join(distPath, 'assets');
+  if (fs.existsSync(assetsPath)) {
+    const files = fs.readdirSync(assetsPath);
+    console.log(`[Static] Assets directory contains ${files.length} files:`, files);
+  } else {
+    console.log(`[Static] WARNING: Assets directory not found at ${assetsPath}`);
+  }
+
   // Serve static files with proper MIME types
   app.use(express.static(distPath, {
     setHeaders: (res, filePath) => {
+      console.log(`[Static] Serving file: ${filePath}`);
       if (filePath.endsWith('.js')) {
         res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
       } else if (filePath.endsWith('.css')) {
