@@ -21,10 +21,10 @@ export default function Contact() {
                 Send us an email and we'll respond within 24-48 hours.
               </p>
               <a 
-                href="mailto:support@streamvault.com" 
+                href="mailto:contact@streamvault.live" 
                 className="text-primary hover:underline"
               >
-                support@streamvault.com
+                contact@streamvault.live
               </a>
             </div>
 
@@ -37,10 +37,10 @@ export default function Contact() {
                 Share your thoughts and help us improve StreamVault.
               </p>
               <a 
-                href="mailto:feedback@streamvault.com" 
+                href="mailto:contact@streamvault.live" 
                 className="text-primary hover:underline"
               >
-                feedback@streamvault.com
+                contact@streamvault.live
               </a>
             </div>
 
@@ -53,10 +53,10 @@ export default function Contact() {
                 Need help? Our support team is ready to assist you.
               </p>
               <a 
-                href="mailto:help@streamvault.com" 
+                href="mailto:contact@streamvault.live" 
                 className="text-primary hover:underline"
               >
-                help@streamvault.com
+                contact@streamvault.live
               </a>
             </div>
           </div>
@@ -109,10 +109,10 @@ export default function Contact() {
               For partnerships, advertising, or other business opportunities, please contact:
             </p>
             <a 
-              href="mailto:business@streamvault.com" 
+              href="mailto:contact@streamvault.live" 
               className="text-primary hover:underline text-lg font-semibold"
             >
-              business@streamvault.com
+              contact@streamvault.live
             </a>
           </div>
         </div>
