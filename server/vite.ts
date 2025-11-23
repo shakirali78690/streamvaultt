@@ -78,6 +78,6 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // Note: The catch-all route is now handled in routes.ts with meta tag injection
-  // This allows dynamic meta tags for show pages
+  // Note: The catch-all HTML route with meta tag injection
+  // is added separately via setupHTMLHandler() in routes.ts
 }

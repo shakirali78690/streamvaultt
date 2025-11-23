@@ -941,6 +941,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const httpServer = createServer(app);
+
+  return httpServer;
+}
+
+// Setup HTML serving with meta tag injection (call this AFTER vite/static setup)
+export function setupHTMLHandler(app: Express) {
   // Catch-all route for HTML pages with dynamic meta tag injection
   // Only handle requests that look like page routes, not assets
   app.get("*", async (req, res, next) => {
@@ -1011,8 +1018,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).send('Error loading page');
     }
   });
-
-  const httpServer = createServer(app);
-
-  return httpServer;
 }
