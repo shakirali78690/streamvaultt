@@ -226,6 +226,51 @@
     display: none;
   }
 
+  /* Custom Minimal Scrollbar Styles */
+  /* For Webkit browsers (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 10px;
+    transition: background 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* For Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+
+  /* Chatbot specific scrollbar */
+  .chatbot-messages::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .chatbot-messages::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .chatbot-messages::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.3);
+    border-radius: 10px;
+  }
+
+  .chatbot-messages::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.5);
+  }
+
 
   /**
    * Toggleable backgrounds go behind the content. Hoverable/active goes on top.

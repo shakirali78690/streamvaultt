@@ -18,9 +18,9 @@ Disallow: /api/admin/*
 Disallow: /api/
 
 # Sitemaps
-Sitemap: https://streamvault.up.railway.app/sitemap.xml
-Sitemap: https://streamvault.up.railway.app/sitemap-shows.xml
-Sitemap: https://streamvault.up.railway.app/sitemap-episodes.xml
+Sitemap: https://streamvault.live/sitemap.xml
+Sitemap: https://streamvault.live/sitemap-shows.xml
+Sitemap: https://streamvault.live/sitemap-categories.xml
 
 # Crawl-delay for polite crawling
 Crawl-delay: 1

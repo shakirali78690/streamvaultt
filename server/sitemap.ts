@@ -3,7 +3,7 @@ import type { IStorage } from "./storage";
 import type { Show, Category } from "@shared/schema";
 
 export function setupSitemaps(app: Express, storage: IStorage) {
-  const baseUrl = process.env.BASE_URL || "https://streamvault.up.railway.app";
+  const baseUrl = process.env.BASE_URL || "https://streamvault.live";
 
   // Main sitemap index
   app.get("/sitemap.xml", async (_req, res) => {
