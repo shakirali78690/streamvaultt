@@ -90,3 +90,9 @@ yarn-error.log*
 # Misc
 .turbo
 .contentlayer
+
+# SEO Automation - Sensitive Files
+google-service-account.json
+indexnow-key.txt
+*.txt
+!client/public/*.txt
