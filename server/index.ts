@@ -1,3 +1,6 @@
+import { config } from "dotenv";
+config(); // Load environment variables first
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -93,5 +96,12 @@ app.get('/430747cadbbf78f339306f7049a8f3c5.txt', (_req, res) => {
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
   server.listen(port, host, () => {
     log(`serving on ${host}:${port}`);
+    
+    // Log email notification status
+    if (process.env.RESEND_API_KEY) {
+      console.log("✅ Email notifications enabled (Resend)");
+    } else {
+      console.log("📧 Email notifications: Console only (add RESEND_API_KEY to .env for real emails)");
+    }
   });
 })();

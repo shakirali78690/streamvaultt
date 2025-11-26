@@ -1,4 +1,4 @@
-import type { Show, Episode, Movie, InsertShow, InsertEpisode, InsertMovie, WatchlistItem, ViewingProgress, Category } from "@shared/schema";
+import type { Show, Episode, Movie, Comment, InsertShow, InsertEpisode, InsertMovie, InsertComment, WatchlistItem, ViewingProgress, Category } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -81,12 +81,18 @@ export interface IStorage {
   // Issue Reports
   getAllIssueReports(): Promise<IssueReport[]>;
   createIssueReport(report: Omit<IssueReport, 'id' | 'status' | 'createdAt'>): Promise<IssueReport>;
+
+  // Comments
+  getCommentsByEpisodeId(episodeId: string): Promise<Comment[]>;
+  getCommentsByMovieId(movieId: string): Promise<Comment[]>;
+  createComment(comment: InsertComment): Promise<Comment>;
 }
 
 export class MemStorage implements IStorage {
   private shows: Map<string, Show>;
   private episodes: Map<string, Episode>;
   private movies: Map<string, Movie>;
+  private comments: Map<string, Comment>;
   private watchlists: Map<string, Map<string, WatchlistEntry>>;
   private viewingProgress: Map<string, Map<string, ProgressEntry>>;
   private categories: Category[];
@@ -99,6 +105,7 @@ export class MemStorage implements IStorage {
     this.shows = new Map();
     this.episodes = new Map();
     this.movies = new Map();
+    this.comments = new Map();
     this.watchlists = new Map();
     this.viewingProgress = new Map();
     this.contentRequests = new Map();
@@ -141,6 +148,24 @@ export class MemStorage implements IStorage {
           data.movies.forEach((movie: Movie) => this.movies.set(movie.id, movie));
           console.log(`✅ Loaded ${data.movies.length} movies`);
         }
+        
+        // Restore comments
+        if (data.comments) {
+          data.comments.forEach((comment: Comment) => this.comments.set(comment.id, comment));
+          console.log(`✅ Loaded ${data.comments.length} comments`);
+        }
+        
+        // Restore content requests
+        if (data.contentRequests) {
+          data.contentRequests.forEach((request: ContentRequest) => this.contentRequests.set(request.id, request));
+          console.log(`✅ Loaded ${data.contentRequests.length} content requests`);
+        }
+        
+        // Restore issue reports
+        if (data.issueReports) {
+          data.issueReports.forEach((report: IssueReport) => this.issueReports.set(report.id, report));
+          console.log(`✅ Loaded ${data.issueReports.length} issue reports`);
+        }
       } else {
         console.log("📦 No data file found, seeding initial data...");
         this.seedData();
@@ -160,6 +185,9 @@ export class MemStorage implements IStorage {
         shows: Array.from(this.shows.values()),
         episodes: Array.from(this.episodes.values()),
         movies: Array.from(this.movies.values()),
+        comments: Array.from(this.comments.values()),
+        contentRequests: Array.from(this.contentRequests.values()),
+        issueReports: Array.from(this.issueReports.values()),
         lastUpdated: new Date().toISOString(),
       };
 
@@ -714,6 +742,34 @@ export class MemStorage implements IStorage {
     this.issueReports.set(id, newReport);
     this.saveData();
     return newReport;
+  }
+
+  // Comments
+  async getCommentsByEpisodeId(episodeId: string): Promise<Comment[]> {
+    return Array.from(this.comments.values())
+      .filter(comment => comment.episodeId === episodeId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async getCommentsByMovieId(movieId: string): Promise<Comment[]> {
+    return Array.from(this.comments.values())
+      .filter(comment => comment.movieId === movieId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async createComment(comment: InsertComment): Promise<Comment> {
+    const id = randomUUID();
+    const newComment: Comment = {
+      id,
+      episodeId: comment.episodeId || null,
+      movieId: comment.movieId || null,
+      userName: comment.userName,
+      comment: comment.comment,
+      createdAt: new Date(),
+    };
+    this.comments.set(id, newComment);
+    this.saveData();
+    return newComment;
   }
 }
 

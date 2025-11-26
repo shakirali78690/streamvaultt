@@ -3,6 +3,7 @@ import { useRoute, Link } from "wouter";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CommentsSection } from "@/components/comments-section";
 import type { Movie } from "@shared/schema";
 
 export default function WatchMovie() {
@@ -78,6 +79,11 @@ export default function WatchMovie() {
                 )}
               </div>
               <p className="text-muted-foreground">{movie.description}</p>
+              
+              {/* Comments Section */}
+              <div className="mt-8">
+                <CommentsSection movieId={movie.id} />
+              </div>
             </div>
           </div>
         </div>

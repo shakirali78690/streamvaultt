@@ -35,6 +35,7 @@ export const episodes = pgTable("episodes", {
   thumbnailUrl: text("thumbnail_url").notNull(),
   duration: integer("duration").notNull(), // in minutes
   googleDriveUrl: text("google_drive_url").notNull(),
+  videoUrl: text("video_url"), // New field for video URLs (Archive.org, etc.)
   airDate: text("air_date"),
 });
 
@@ -60,6 +61,16 @@ export const movies = pgTable("movies", {
   category: text("category"), // "action", "drama", "comedy", etc.
 });
 
+// Comments table
+export const comments = pgTable("comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  episodeId: varchar("episode_id"), // null if it's a movie comment
+  movieId: varchar("movie_id"), // null if it's an episode comment
+  userName: text("user_name").notNull(),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Watchlist table (localStorage for MVP)
 export const watchlistSchema = z.object({
   showId: z.string().optional(),
@@ -83,14 +94,17 @@ export const viewingProgressSchema = z.object({
 export const insertShowSchema = createInsertSchema(shows).omit({ id: true });
 export const insertEpisodeSchema = createInsertSchema(episodes).omit({ id: true });
 export const insertMovieSchema = createInsertSchema(movies).omit({ id: true });
+export const insertCommentSchema = createInsertSchema(comments).omit({ id: true, createdAt: true });
 
 // Select types
 export type Show = typeof shows.$inferSelect;
 export type Episode = typeof episodes.$inferSelect;
 export type Movie = typeof movies.$inferSelect;
+export type Comment = typeof comments.$inferSelect;
 export type InsertShow = z.infer<typeof insertShowSchema>;
 export type InsertEpisode = z.infer<typeof insertEpisodeSchema>;
 export type InsertMovie = z.infer<typeof insertMovieSchema>;
+export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type WatchlistItem = z.infer<typeof watchlistSchema>;
 export type ViewingProgress = z.infer<typeof viewingProgressSchema>;
 

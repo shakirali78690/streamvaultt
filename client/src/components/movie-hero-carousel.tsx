@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Play, Info, Star } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Play, Info, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Movie } from "@shared/schema";
@@ -12,6 +12,8 @@ interface MovieHeroCarouselProps {
 export function MovieHeroCarousel({ movies }: MovieHeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
 
   useEffect(() => {
     if (!isAutoPlaying || movies.length === 0) return;
@@ -38,12 +40,38 @@ export function MovieHeroCarousel({ movies }: MovieHeroCarouselProps) {
     setIsAutoPlaying(false);
   };
 
+  // Touch/Swipe handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current - touchEndX.current > 50) {
+      // Swipe left - next slide
+      nextSlide();
+    }
+
+    if (touchStartX.current - touchEndX.current < -50) {
+      // Swipe right - previous slide
+      prevSlide();
+    }
+  };
+
   if (movies.length === 0) return null;
 
   const currentMovie = movies[currentIndex];
 
   return (
-    <div className="relative h-[80vh] overflow-hidden">
+    <div 
+      className="relative h-[80vh] overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Background Image with Gradient */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-all duration-700"
@@ -111,26 +139,6 @@ export function MovieHeroCarousel({ movies }: MovieHeroCarouselProps) {
           </div>
         </div>
       </div>
-
-      {/* Navigation Arrows */}
-      {movies.length > 1 && (
-        <>
-          <button
-            onClick={prevSlide}
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition z-10"
-            aria-label="Previous slide"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition z-10"
-            aria-label="Next slide"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
-        </>
-      )}
 
       {/* Dots Indicator */}
       {movies.length > 1 && (

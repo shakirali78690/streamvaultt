@@ -6,6 +6,7 @@ import { watchlistSchema, viewingProgressSchema } from "@shared/schema";
 import type { InsertEpisode } from "@shared/schema";
 import { readFileSync, existsSync } from "fs";
 import { setupSitemaps } from "./sitemap";
+import { sendContentRequestEmail, sendIssueReportEmail } from "./email-service";
 
 // Admin credentials (in production, use environment variables and hashed passwords)
 const ADMIN_USERNAME = "admin";
@@ -875,6 +876,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Get all content requests
+  app.get("/api/admin/content-requests", requireAdmin, async (req, res) => {
+    try {
+      const requests = await storage.getAllContentRequests();
+      res.json(requests);
+    } catch (error: any) {
+      console.error('Error fetching content requests:', error);
+      res.status(500).json({ error: 'Failed to fetch content requests' });
+    }
+  });
+
+  // Admin: Get all issue reports
+  app.get("/api/admin/issue-reports", requireAdmin, async (req, res) => {
+    try {
+      const reports = await storage.getAllIssueReports();
+      res.json(reports);
+    } catch (error: any) {
+      console.error('Error fetching issue reports:', error);
+      res.status(500).json({ error: 'Failed to fetch issue reports' });
+    }
+  });
+
   // Handle issue reports
   app.post("/api/report-issue", async (req, res) => {
     try {
@@ -893,6 +916,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Type:', issueType);
       console.log('Title:', title);
       console.log('---');
+      
+      // Send email notification (don't wait for it)
+      sendIssueReportEmail(report).catch(err => 
+        console.error('Failed to send issue report email:', err)
+      );
       
       res.json({ 
         success: true, 
@@ -926,6 +954,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('🎬 Content Request:', request.title, `(${request.requestCount} requests)`);
       
+      // Send email notification (don't wait for it)
+      sendContentRequestEmail(request).catch(err => 
+        console.error('Failed to send content request email:', err)
+      );
+      
       res.json({ 
         success: true, 
         message: 'Content request submitted successfully',
@@ -948,6 +981,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error fetching top requests:', error);
       res.status(500).json({ error: 'Failed to fetch top requests' });
+    }
+  });
+
+  // Comments - Get comments for an episode
+  app.get("/api/comments/episode/:episodeId", async (req, res) => {
+    try {
+      const { episodeId } = req.params;
+      const comments = await storage.getCommentsByEpisodeId(episodeId);
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+
+  // Comments - Get comments for a movie
+  app.get("/api/comments/movie/:movieId", async (req, res) => {
+    try {
+      const { movieId } = req.params;
+      const comments = await storage.getCommentsByMovieId(movieId);
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+
+  // Comments - Create a new comment
+  app.post("/api/comments", async (req, res) => {
+    try {
+      const { episodeId, movieId, userName, comment } = req.body;
+      
+      // Validate input
+      if (!userName || !comment) {
+        return res.status(400).json({ error: "userName and comment are required" });
+      }
+      
+      if (!episodeId && !movieId) {
+        return res.status(400).json({ error: "Either episodeId or movieId is required" });
+      }
+      
+      const newComment = await storage.createComment({
+        episodeId: episodeId || null,
+        movieId: movieId || null,
+        userName,
+        comment,
+      });
+      
+      res.status(201).json(newComment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create comment" });
     }
   });
 

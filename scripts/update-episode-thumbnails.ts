@@ -91,6 +91,12 @@ async function updateShowEpisodeThumbnails(show: any, tmdbId: number) {
       
       // Update each episode
       for (const episode of seasonEpisodes) {
+        // Skip if episode already has a thumbnail
+        if (episode.thumbnail && episode.thumbnail.trim() !== '') {
+          skipped++;
+          continue;
+        }
+        
         const tmdbEpisode = seasonData.episodes.find(
           (e: TMDBEpisode) => e.episode_number === episode.episode
         );

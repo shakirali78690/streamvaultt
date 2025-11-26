@@ -101,12 +101,14 @@ export default function AdminPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 mb-8">
+          <TabsList className="grid w-full grid-cols-7 mb-8">
             <TabsTrigger value="shows">Shows</TabsTrigger>
             <TabsTrigger value="movies">Movies</TabsTrigger>
+            <TabsTrigger value="requests">Requests</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="add-show">Add Show</TabsTrigger>
             <TabsTrigger value="add-episode">Add Episode</TabsTrigger>
-            <TabsTrigger value="import">Import Episodes</TabsTrigger>
+            <TabsTrigger value="import">Import</TabsTrigger>
           </TabsList>
 
           {/* Manage Shows Tab */}
@@ -117,6 +119,16 @@ export default function AdminPage() {
           {/* Manage Movies Tab */}
           <TabsContent value="movies">
             <ManageMovies movies={movies} />
+          </TabsContent>
+
+          {/* Content Requests Tab */}
+          <TabsContent value="requests">
+            <ContentRequests />
+          </TabsContent>
+
+          {/* Issue Reports Tab */}
+          <TabsContent value="reports">
+            <IssueReports />
           </TabsContent>
 
           {/* Add Show Tab */}
@@ -1890,5 +1902,168 @@ function EditMovieForm({
         Save Changes
       </Button>
     </form>
+  );
+}
+
+// Content Requests Component
+function ContentRequests() {
+  const { data: requests = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/content-requests"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/content-requests", {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to fetch content requests");
+      return res.json();
+    },
+  });
+
+  if (isLoading) {
+    return <div className="text-center py-8">Loading content requests...</div>;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Content Requests</CardTitle>
+        <CardDescription>
+          User requests for new shows and movies ({requests.length} total)
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {requests.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No content requests yet
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {requests.map((request: any) => (
+              <Card key={request.id} className="border-l-4 border-l-primary">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-xl">{request.title}</CardTitle>
+                      <CardDescription>
+                        {request.contentType} • {request.year || "Year not specified"}
+                      </CardDescription>
+                    </div>
+                    <Badge variant="secondary">
+                      {request.requestCount} request{request.requestCount > 1 ? "s" : ""}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {request.genre && (
+                    <div>
+                      <strong>Genre:</strong> {request.genre}
+                    </div>
+                  )}
+                  {request.description && (
+                    <div>
+                      <strong>Description:</strong> {request.description}
+                    </div>
+                  )}
+                  {request.reason && (
+                    <div>
+                      <strong>Reason:</strong> {request.reason}
+                    </div>
+                  )}
+                  {request.email && (
+                    <div>
+                      <strong>Email:</strong> {request.email}
+                    </div>
+                  )}
+                  <div className="text-sm text-muted-foreground">
+                    Submitted: {new Date(request.createdAt).toLocaleString()}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Issue Reports Component
+function IssueReports() {
+  const { data: reports = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/issue-reports"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/issue-reports", {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to fetch issue reports");
+      return res.json();
+    },
+  });
+
+  if (isLoading) {
+    return <div className="text-center py-8">Loading issue reports...</div>;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Issue Reports</CardTitle>
+        <CardDescription>
+          User-reported issues and bugs ({reports.length} total)
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {reports.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            No issue reports yet
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {reports.map((report: any) => (
+              <Card key={report.id} className="border-l-4 border-l-destructive">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-xl">{report.title}</CardTitle>
+                      <CardDescription>
+                        {report.issueType.replace(/_/g, " ")}
+                      </CardDescription>
+                    </div>
+                    <Badge variant={report.status === "pending" ? "destructive" : "secondary"}>
+                      {report.status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div>
+                    <strong>Description:</strong> {report.description}
+                  </div>
+                  {report.url && (
+                    <div>
+                      <strong>Page URL:</strong>{" "}
+                      <a
+                        href={report.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {report.url}
+                      </a>
+                    </div>
+                  )}
+                  {report.email && (
+                    <div>
+                      <strong>Email:</strong> {report.email}
+                    </div>
+                  )}
+                  <div className="text-sm text-muted-foreground">
+                    Submitted: {new Date(report.createdAt).toLocaleString()}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

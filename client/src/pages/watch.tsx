@@ -5,6 +5,7 @@ import { ChevronLeft, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CommentsSection } from "@/components/comments-section";
 import type { Show, Episode } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -81,12 +82,13 @@ export default function Watch() {
     );
   }
 
-  const extractDriveId = (url: string) => {
+  const extractDriveId = (url: string | undefined) => {
+    if (!url) return null;
     const match = url.match(/\/d\/([^/]+)/);
     return match ? match[1] : null;
   };
 
-  const driveId = extractDriveId(currentEpisodeData.googleDriveUrl);
+  const driveId = extractDriveId(currentEpisodeData.videoUrl || currentEpisodeData.googleDriveUrl);
 
   return (
     <div className="min-h-screen bg-background">
@@ -142,6 +144,11 @@ export default function Watch() {
                 {currentEpisodeData.airDate && <span>{currentEpisodeData.airDate}</span>}
               </div>
             </div>
+
+            {/* Comments Section - Desktop only */}
+            <div className="mt-8 hidden lg:block">
+              <CommentsSection episodeId={currentEpisodeData.id} />
+            </div>
           </div>
 
           {/* Up Next Sidebar */}
@@ -191,6 +198,11 @@ export default function Watch() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Comments Section - Mobile only (below Up Next) */}
+        <div className="mt-8 lg:hidden">
+          <CommentsSection episodeId={currentEpisodeData.id} />
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Play, Info, Star } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Play, Info, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Show } from "@shared/schema";
@@ -12,6 +12,8 @@ interface HeroCarouselProps {
 export function HeroCarousel({ shows }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
 
   useEffect(() => {
     if (!isAutoPlaying || shows.length === 0) return;
@@ -38,12 +40,38 @@ export function HeroCarousel({ shows }: HeroCarouselProps) {
     setIsAutoPlaying(false);
   };
 
+  // Touch/Swipe handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current - touchEndX.current > 50) {
+      // Swipe left - next slide
+      goToNext();
+    }
+
+    if (touchStartX.current - touchEndX.current < -50) {
+      // Swipe right - previous slide
+      goToPrevious();
+    }
+  };
+
   if (shows.length === 0) return null;
 
   const currentShow = shows[currentIndex];
 
   return (
-    <div className="relative w-full h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden">
+    <div 
+      className="relative w-full h-[70vh] min-h-[500px] max-h-[800px] overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Background Image with Gradient */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-all duration-700"
@@ -124,24 +152,6 @@ export function HeroCarousel({ shows }: HeroCarouselProps) {
           </div>
         </div>
       </div>
-
-      {/* Navigation Arrows */}
-      <button
-        onClick={goToPrevious}
-        className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-background/20 backdrop-blur-sm text-foreground hover-elevate active-elevate-2 transition-all"
-        aria-label="Previous slide"
-        data-testid="button-hero-prev"
-      >
-        <ChevronLeft className="w-6 h-6" />
-      </button>
-      <button
-        onClick={goToNext}
-        className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center rounded-full bg-background/20 backdrop-blur-sm text-foreground hover-elevate active-elevate-2 transition-all"
-        aria-label="Next slide"
-        data-testid="button-hero-next"
-      >
-        <ChevronRight className="w-6 h-6" />
-      </button>
 
       {/* Dots Indicator */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
