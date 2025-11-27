@@ -112,9 +112,10 @@ export default function Watch() {
               {driveId ? (
                 <iframe
                   key={`${currentSeason}-${currentEpisode}`}
-                  src={`https://drive.google.com/file/d/${driveId}/preview`}
+                  src={`https://drive.google.com/file/d/${driveId}/preview?autoplay=0&controls=1&modestbranding=1`}
                   className="w-full h-full border-0"
                   allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   data-testid="iframe-video-player"
                   style={{ border: 'none' }}
                 />

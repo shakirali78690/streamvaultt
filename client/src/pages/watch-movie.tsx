@@ -50,10 +50,12 @@ export default function WatchMovie() {
             <div className="aspect-video bg-black">
               {driveId ? (
                 <iframe
-                  src={`https://drive.google.com/file/d/${driveId}/preview`}
-                  className="w-full h-full"
+                  src={`https://drive.google.com/file/d/${driveId}/preview?autoplay=0&controls=1&modestbranding=1`}
+                  className="w-full h-full border-0"
                   allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   title={movie.title}
+                  style={{ border: 'none' }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-white">
