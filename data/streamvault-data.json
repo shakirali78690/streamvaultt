@@ -50042,11 +50042,11 @@
       "duration": 111,
       "language": "English",
       "cast": "Vera Farmiga, Patrick Wilson, Sterling Jerins, Ruairí O'Connor, Sarah Catherine Hook, Julian Hilliard, Charlene Amoia, John Noble, Eugenie Bondurant, Shannon Kook",
-      "googleDriveUrl": "https://drive.google.com/file/d/1bO7WMb9areLE7TWRsdGBnEYtxbIPQikZ/preview",
+      "googleDriveUrl": "https://drive.google.com/file/d/1GUjJeCyeDYsnrgLHN6JGfrPL1RCz18yy/preview",
       "isTrending": false,
       "isFeatured": false,
       "directors": "",
-      "featured": true,
+      "featured": false,
       "trending": true
     },
     {
@@ -50064,11 +50064,11 @@
       "duration": 112,
       "language": "English",
       "cast": "Vera Farmiga, Patrick Wilson, Lili Taylor, Ron Livingston, Hayley McFarland, Sterling Jerins, Shanley Caswell, Mackenzie Foy, Joey King, Kyla Deaver",
-      "googleDriveUrl": "https://drive.google.com/file/d/1foLge5muH9_IKXifGt2n1jaynxVzI5NK/preview",
+      "googleDriveUrl": "https://drive.google.com/file/d/1IaJN-W1H1Snv1h7uTwPJQObRB_wJjemA/preview",
       "isTrending": false,
       "isFeatured": false,
       "directors": "",
-      "featured": true,
+      "featured": false,
       "trending": true
     },
     {
@@ -50077,7 +50077,7 @@
       "slug": "the-conjuring-2",
       "description": "Lorraine and Ed Warren travel to north London to help a single mother raising four children alone in a house plagued by malicious spirits.",
       "posterUrl": "https://image.tmdb.org/t/p/w780/zEqyD0SBt6HL7W9JQoWwtd5Do1T.jpg",
-      "backdropUrl": "https://image.tmdb.org/t/p/w780/dEbLMT0m5QgKMhyFNqKPBmPCSjx.jpg",
+      "backdropUrl": "https://image.tmdb.org/t/p/original/y8FqFYi4YKwQ2ZirtEzBwY95gQU.jpg",
       "year": 2016,
       "rating": "R",
       "imdbRating": "7.3",
@@ -50086,11 +50086,11 @@
       "duration": 134,
       "language": "English",
       "cast": "Vera Farmiga, Patrick Wilson, Frances O'Connor, Madison Wolfe, Simon McBurney, Franka Potente, Lauren Esposito, Benjamin Haigh, Patrick McAuley, Maria Doyle Kennedy",
-      "googleDriveUrl": "https://drive.google.com/file/d/1ufBWcakpd5QEzcLOKJuSnRwLeH90q3bA/preview",
+      "googleDriveUrl": "https://drive.google.com/file/d/1ItmL2TMfk7gHhZ3VfhnHv_GBGFfLlFqg/preview",
       "isTrending": false,
       "isFeatured": false,
       "directors": "",
-      "featured": true,
+      "featured": false,
       "trending": true
     },
     {
@@ -50108,7 +50108,7 @@
       "duration": 136,
       "language": "English",
       "cast": "Vera Farmiga, Patrick Wilson, Mia Tomlinson, Ben Hardy, Rebecca Calder, Tilly Walker, Elliot Cowan, Shannon Kook, Steve Coulter, Kíla Lord Cassidy",
-      "googleDriveUrl": "https://drive.google.com/file/d/1i17Hfz9WAmH9bG7At1uS5OSdfOLCbx0L/preview",
+      "googleDriveUrl": "https://drive.google.com/file/d/1xwjssHrK1ifQIeCUz8oIVKqGMWszEwuq/preview",
       "isTrending": false,
       "isFeatured": false,
       "directors": "",
@@ -50208,5 +50208,5 @@
       "createdAt": "2025-11-26T19:01:47.905Z"
     }
   ],
-  "lastUpdated": "2025-11-29T08:05:57.369Z"
+  "lastUpdated": "2025-11-29T09:06:56.821Z"
 }
