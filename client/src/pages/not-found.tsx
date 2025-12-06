@@ -7,7 +7,7 @@ export default function NotFound() {
     <div className="min-h-screen w-full flex items-center justify-center bg-background">
       <div className="text-center px-4 max-w-lg">
         {/* Large 404 */}
-        <h1 className="text-[150px] md:text-[200px] font-bold leading-none text-primary/20 select-none">
+        <h1 className="text-[150px] md:text-[200px] font-bold leading-none text-primary select-none drop-shadow-[0_0_25px_rgba(220,38,38,0.5)] animate-pulse">
           404
         </h1>
         
