@@ -341,3 +341,28 @@
     inset: -1px;
   }
 }
+
+/* Chatbot glowing border animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(12px);
+  }
+}
+
+.chatbot-glow {
+  animation: glow-pulse 2s ease-in-out infinite;
+}

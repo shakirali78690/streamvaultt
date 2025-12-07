@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Loader2, Sparkles, Star, Clock, TrendingUp, Film, Tv, Shuffle } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Sparkles, Star, Clock, TrendingUp, Film, Tv, Shuffle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
-import type { Show, Movie } from "@shared/schema";
+import type { Show, Movie, Episode } from "@shared/schema";
 import { Link } from "wouter";
 
 interface Message {
@@ -11,13 +11,14 @@ interface Message {
   text: string;
   isBot: boolean;
   suggestions?: string[];
-  showLinks?: Array<{ title: string; slug: string; type: 'show' | 'movie'; rating?: string; year?: number; poster?: string }>;
+  showLinks?: Array<{ title: string; slug: string; type: 'show' | 'movie'; rating?: string; year?: number; poster?: string; description?: string }>;
   quickActions?: Array<{ label: string; icon: string; action: string }>;
 }
 
 interface ConversationContext {
   lastGenre?: string;
   lastType?: 'show' | 'movie';
+  lastRecommendedTitle?: string;
   searchHistory: string[];
   recommendedIds: string[];
 }
@@ -47,6 +48,7 @@ export function Chatbot() {
   const [context, setContext] = useState<ConversationContext>({
     searchHistory: [],
     recommendedIds: [],
+    lastRecommendedTitle: undefined,
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -56,6 +58,10 @@ export function Chatbot() {
 
   const { data: movies } = useQuery<Movie[]>({
     queryKey: ["/api/movies"],
+  });
+
+  const { data: episodes } = useQuery<Episode[]>({
+    queryKey: ["/api/episodes"],
   });
 
   const scrollToBottom = () => {
@@ -213,14 +219,27 @@ export function Chatbot() {
   };
 
   // Format content for display
-  const formatContent = (items: (Show | Movie)[]): Array<{ title: string; slug: string; type: 'show' | 'movie'; rating?: string; year?: number }> => {
+  const formatContent = (items: (Show | Movie)[]): Array<{ title: string; slug: string; type: 'show' | 'movie'; rating?: string; year?: number; poster?: string; description?: string }> => {
     return items.map(item => ({
       title: item.title,
       slug: item.slug,
       type: isMovie(item) ? 'movie' as const : 'show' as const,
       rating: item.imdbRating || undefined,
       year: item.year,
+      poster: item.posterUrl || undefined,
+      description: item.description?.slice(0, 80) || undefined,
     }));
+  };
+
+  // Parse markdown-like text to render bold
+  const renderText = (text: string) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={index} className="font-semibold">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
   };
 
   const generateResponse = (userMessage: string): Message => {
@@ -232,6 +251,38 @@ export function Chatbot() {
       searchHistory: [...prev.searchHistory.slice(-5), userMessage],
     }));
 
+    // ===== BROWSE GENRES =====
+    if (
+      lowerMessage.includes("browse genre") ||
+      lowerMessage.includes("genres") ||
+      lowerMessage === "browse"
+    ) {
+      return {
+        id: Date.now().toString(),
+        text: "🎭 Pick a genre to explore:",
+        isBot: true,
+        suggestions: ["Action", "Comedy", "Drama", "Horror", "Romance", "Sci-Fi", "Thriller", "Animation"],
+      };
+    }
+
+    // ===== HELP / PLAYBACK ISSUES (moved up for priority) =====
+    if (
+      lowerMessage.includes("help") ||
+      lowerMessage.includes("not working") ||
+      lowerMessage.includes("error") ||
+      lowerMessage.includes("problem") ||
+      lowerMessage.includes("issue") ||
+      lowerMessage.includes("video error") ||
+      lowerMessage.includes("playback")
+    ) {
+      return {
+        id: Date.now().toString(),
+        text: "🔧 **Troubleshooting Tips:**\n\n1. Refresh the page\n2. Clear browser cache\n3. Try a different browser\n4. Check internet connection\n5. Disable ad blockers\n\nStill stuck? Try a different title!",
+        isBot: true,
+        suggestions: ["🎲 Surprise me", "🔥 What's trending", "Top rated"],
+      };
+    }
+
     // ===== SURPRISE ME / RANDOM =====
     if (
       lowerMessage.includes("surprise") ||
@@ -239,28 +290,73 @@ export function Chatbot() {
       lowerMessage.includes("🎲") ||
       lowerMessage.includes("anything") ||
       lowerMessage.includes("don't know") ||
-      lowerMessage.includes("dont know")
+      lowerMessage.includes("dont know") ||
+      lowerMessage.includes("another one")
     ) {
       const pick = getRandomPick();
       if (pick) {
         const type = isMovie(pick) ? 'movie' : 'show';
+        // Store the last recommended title for "Similar to this"
+        setContext(prev => ({ ...prev, lastRecommendedTitle: pick.title }));
         return {
           id: Date.now().toString(),
-          text: `🎲 Here's my pick for you!\n\n**${pick.title}** (${pick.year})\n⭐ ${pick.imdbRating || 'N/A'}/10\n\n${pick.description?.slice(0, 150)}...`,
+          text: `Here's my pick for you!`,
           isBot: true,
-          showLinks: [{ title: pick.title, slug: pick.slug, type, rating: pick.imdbRating || undefined, year: pick.year }],
-          suggestions: ["🎲 Another one!", "Similar to this", "Top rated instead"],
+          showLinks: [{ title: pick.title, slug: pick.slug, type, rating: pick.imdbRating || undefined, year: pick.year, poster: pick.posterUrl || undefined, description: pick.description?.slice(0, 100) || undefined }],
+          suggestions: ["Another one!", "Similar to this", "Top rated instead"],
         };
       }
+    }
+
+    // ===== SIMILAR TO THIS (context-aware) =====
+    if (lowerMessage === "similar to this" || lowerMessage === "similar content") {
+      if (context.lastRecommendedTitle) {
+        const similar = getSimilarContent(context.lastRecommendedTitle);
+        if (similar.length > 0) {
+          const firstTitle = similar[0]?.title;
+          if (firstTitle) {
+            setContext(prev => ({ ...prev, lastRecommendedTitle: firstTitle }));
+          }
+          return {
+            id: Date.now().toString(),
+            text: `🎯 Similar to "${context.lastRecommendedTitle}":`,
+            isBot: true,
+            showLinks: formatContent(similar),
+            suggestions: ["🎲 Surprise me", "Top rated", "Browse genres"],
+          };
+        }
+      }
+      return {
+        id: Date.now().toString(),
+        text: "I don't have a previous recommendation to compare. Let me pick something for you!",
+        isBot: true,
+        suggestions: ["🎲 Surprise me", "🔥 What's trending", "Top rated"],
+      };
     }
 
     // ===== SIMILAR TO / LIKE =====
     const similarMatch = lowerMessage.match(/(?:similar to|like|recommend.*like|something like)\s+(.+)/i);
     if (similarMatch) {
       const title = similarMatch[1].replace(/['"]/g, '').trim();
+      if (title === "this") {
+        // Handle "similar to this" case
+        if (context.lastRecommendedTitle) {
+          const similar = getSimilarContent(context.lastRecommendedTitle);
+          if (similar.length > 0) {
+            return {
+              id: Date.now().toString(),
+              text: `🎯 Similar to "${context.lastRecommendedTitle}":`,
+              isBot: true,
+              showLinks: formatContent(similar),
+              suggestions: ["🎲 Surprise me", "Top rated", "Browse genres"],
+            };
+          }
+        }
+      }
       const similar = getSimilarContent(title);
       
       if (similar.length > 0) {
+        setContext(prev => ({ ...prev, lastRecommendedTitle: title }));
         return {
           id: Date.now().toString(),
           text: `🎯 If you liked "${title}", you might enjoy these:`,
@@ -345,22 +441,35 @@ export function Chatbot() {
     const episodeMatch = userMessage.match(/(.+?)\s*(?:season|s)\s*(\d+)\s*(?:episode|ep|e)\s*(\d+)/i);
     if (episodeMatch) {
       const showName = episodeMatch[1].trim();
-      const season = episodeMatch[2];
-      const episode = episodeMatch[3];
+      const season = parseInt(episodeMatch[2]);
+      const episode = parseInt(episodeMatch[3]);
       
       const foundShow = shows?.find(s => 
         s.title.toLowerCase().includes(showName.toLowerCase())
       );
       
       if (foundShow) {
+        // Find the specific episode to get its thumbnail
+        const foundEpisode = episodes?.find(ep => 
+          ep.showId === foundShow.id && 
+          ep.season === season && 
+          ep.episodeNumber === episode
+        );
+        
+        const episodeThumbnail = foundEpisode?.thumbnailUrl || foundShow.backdropUrl || foundShow.posterUrl;
+        const episodeTitle = foundEpisode?.title || `Episode ${episode}`;
+        const episodeDescription = foundEpisode?.description?.slice(0, 100) || '';
+        
         return {
           id: Date.now().toString(),
           text: `🎬 Found it! Click to watch ${foundShow.title} S${season}E${episode}:`,
           isBot: true,
           showLinks: [{
-            title: `▶️ ${foundShow.title} - Season ${season}, Episode ${episode}`,
+            title: `▶️ ${foundShow.title} - ${episodeTitle}`,
             slug: `${foundShow.slug}?season=${season}&episode=${episode}`,
             type: 'show' as const,
+            poster: episodeThumbnail,
+            description: episodeDescription,
           }],
           suggestions: ["Next episode", "Show info", "Find another show"],
         };
@@ -469,22 +578,6 @@ export function Chatbot() {
       };
     }
 
-    // ===== HELP / PLAYBACK ISSUES =====
-    if (
-      lowerMessage.includes("help") ||
-      lowerMessage.includes("not working") ||
-      lowerMessage.includes("error") ||
-      lowerMessage.includes("problem") ||
-      lowerMessage.includes("issue")
-    ) {
-      return {
-        id: Date.now().toString(),
-        text: "🔧 **Troubleshooting Tips:**\n\n1. 🔄 Refresh the page\n2. 🧹 Clear browser cache\n3. 🌐 Try a different browser\n4. 📶 Check internet connection\n5. 🚫 Disable ad blockers\n\nStill stuck? Report the issue!",
-        isBot: true,
-        suggestions: ["Report issue", "Contact support", "Try another title"],
-      };
-    }
-
     // ===== WATCHLIST =====
     if (lowerMessage.includes("watchlist") || lowerMessage.includes("save") || lowerMessage.includes("bookmark")) {
       return {
@@ -561,11 +654,24 @@ export function Chatbot() {
 
   return (
     <div 
-      className="w-[calc(100vw-2rem)] sm:w-96 max-w-[400px] h-[600px] max-h-[80vh] bg-background border border-border rounded-lg shadow-2xl flex flex-col z-[100] animate-in slide-in-from-bottom-5 duration-300"
+      className="w-[calc(100vw-2rem)] sm:w-96 max-w-[400px] h-[600px] max-h-[80vh] rounded-2xl shadow-2xl flex flex-col z-[100] animate-in slide-in-from-bottom-5 duration-300 relative"
       style={{ position: 'fixed', bottom: '24px', right: '24px' }}
     >
+      {/* Animated glowing border effect - Siri-style */}
+      <div className="absolute -inset-[3px] rounded-2xl chatbot-glow bg-gradient-to-r from-red-500 via-red-400 to-red-600" />
+      <div className="absolute -inset-[2px] rounded-2xl overflow-hidden">
+        <div 
+          className="absolute w-[200%] h-[200%] top-[-50%] left-[-50%]"
+          style={{
+            background: 'conic-gradient(from 0deg, #ef4444, #dc2626, #f87171, #dc2626, #ef4444)',
+            animation: 'spin 3s linear infinite',
+          }}
+        />
+      </div>
+      {/* Main container */}
+      <div className="relative bg-background rounded-2xl flex flex-col h-full overflow-hidden border border-red-500/20">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-t-lg">
+      <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-t-2xl">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
             <Sparkles className="h-5 w-5" />
@@ -590,53 +696,96 @@ export function Chatbot() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 chatbot-messages">
-        {messages.map((message) => (
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 chatbot-messages scroll-smooth">
+        {messages.map((message, msgIdx) => (
           <div
             key={message.id}
-            className={`flex ${message.isBot ? "justify-start" : "justify-end"}`}
+            className={`flex ${message.isBot ? "justify-start" : "justify-end"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+            style={{ animationDelay: msgIdx === messages.length - 1 ? '0ms' : '0ms' }}
           >
             <div
-              className={`max-w-[80%] rounded-lg p-3 ${
+              className={`max-w-[85%] rounded-2xl p-3.5 shadow-sm ${
                 message.isBot
-                  ? "bg-muted text-foreground"
-                  : "bg-primary text-primary-foreground"
+                  ? "bg-muted/80 backdrop-blur-sm text-foreground rounded-tl-sm"
+                  : "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-tr-sm"
               }`}
             >
-              <p className="text-sm whitespace-pre-line">{message.text}</p>
+              <p className="text-sm whitespace-pre-line leading-relaxed">{renderText(message.text)}</p>
 
-              {/* Show/Movie links */}
+              {/* Show/Movie links with poster thumbnails */}
               {message.showLinks && message.showLinks.length > 0 && (
                 <div className="mt-3 space-y-2">
-                  {message.showLinks.map((item) => {
+                  {message.showLinks.map((item, idx) => {
                     // Handle different URL formats
                     let href;
                     if (item.type === 'movie') {
                       href = `/movie/${item.slug}`;
                     } else if (item.slug.includes('?season=')) {
-                      // Episode link with query params
                       href = `/watch/${item.slug}`;
                     } else {
-                      // Regular show link
                       href = `/show/${item.slug}`;
                     }
-                    const icon = item.type === 'movie' ? '🎬' : '📺';
                     
                     return (
                       <Link key={item.slug} href={href}>
                         <div
-                          className="text-sm bg-background hover:bg-accent p-2 rounded border border-border cursor-pointer transition-all hover:scale-[1.02] hover:shadow-sm"
+                          className="group bg-background/80 backdrop-blur-sm hover:bg-accent/80 rounded-xl border border-border/50 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-primary/30 overflow-hidden animate-in fade-in slide-in-from-bottom-2"
+                          style={{ animationDelay: `${idx * 50}ms`, animationFillMode: 'both' }}
                           onClick={() => setIsOpen(false)}
                         >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="flex-1 truncate">{icon} {item.title}</span>
-                            {item.rating && (
-                              <span className="text-xs text-yellow-500 shrink-0">⭐ {item.rating}</span>
-                            )}
+                          <div className="flex gap-3 p-2">
+                            {/* Poster thumbnail */}
+                            <div className="relative w-12 h-16 rounded-lg overflow-hidden shrink-0 bg-muted shadow-sm">
+                              {item.poster ? (
+                                <img 
+                                  src={item.poster} 
+                                  alt={item.title}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                                  {item.type === 'movie' ? (
+                                    <Film className="w-5 h-5 text-muted-foreground" />
+                                  ) : (
+                                    <Tv className="w-5 h-5 text-muted-foreground" />
+                                  )}
+                                </div>
+                              )}
+                              {/* Play overlay on hover */}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                <Play className="w-4 h-4 text-white fill-white" />
+                              </div>
+                            </div>
+                            
+                            {/* Content info */}
+                            <div className="flex-1 min-w-0 py-0.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="font-medium text-sm text-foreground truncate leading-tight">
+                                  {item.title}
+                                </h4>
+                                {item.rating && (
+                                  <div className="flex items-center gap-0.5 shrink-0 bg-yellow-500/10 px-1.5 py-0.5 rounded-md">
+                                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                    <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400">{item.rating}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                                  {item.type}
+                                </span>
+                                {item.year && (
+                                  <span className="text-xs text-muted-foreground">{item.year}</span>
+                                )}
+                              </div>
+                              {item.description && (
+                                <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-tight">
+                                  {item.description}...
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          {item.year && (
-                            <span className="text-xs text-muted-foreground">{item.year}</span>
-                          )}
                         </div>
                       </Link>
                     );
@@ -646,12 +795,13 @@ export function Chatbot() {
 
               {/* Suggestions */}
               {message.suggestions && message.suggestions.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-1.5">
                   {message.suggestions.map((suggestion, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleSuggestionClick(suggestion)}
-                      className="text-xs bg-background hover:bg-accent px-3 py-1 rounded-full border border-border transition-colors"
+                      className="text-xs bg-background/80 hover:bg-primary hover:text-primary-foreground px-3 py-1.5 rounded-full border border-border/50 transition-all duration-200 hover:scale-105 hover:shadow-sm animate-in fade-in slide-in-from-bottom-1"
+                      style={{ animationDelay: `${idx * 30}ms`, animationFillMode: 'both' }}
                     >
                       {suggestion}
                     </button>
@@ -663,9 +813,14 @@ export function Chatbot() {
         ))}
 
         {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-muted rounded-lg p-3">
-              <Loader2 className="h-4 w-4 animate-spin" />
+          <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+              </div>
+              <span className="text-xs text-muted-foreground">Vault is thinking...</span>
             </div>
           </div>
         )}
@@ -673,7 +828,7 @@ export function Chatbot() {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border/50 bg-background/50 backdrop-blur-sm rounded-b-2xl">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -684,14 +839,20 @@ export function Chatbot() {
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1"
+            placeholder="Ask me anything..."
+            className="flex-1 rounded-full bg-muted/50 border-border/50 focus:border-primary/50 transition-colors"
             data-testid="input-chatbot"
           />
-          <Button type="submit" size="icon" data-testid="button-send-message">
+          <Button 
+            type="submit" 
+            size="icon" 
+            className="rounded-full h-10 w-10 shrink-0 transition-transform hover:scale-105"
+            data-testid="button-send-message"
+          >
             <Send className="h-4 w-4" />
           </Button>
         </form>
+      </div>
       </div>
     </div>
   );
