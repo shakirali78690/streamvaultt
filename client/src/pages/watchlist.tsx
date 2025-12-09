@@ -71,7 +71,7 @@ export default function Watchlist() {
 
         {/* Content */}
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
             {Array.from({ length: 12 }).map((_, i) => (
               <Skeleton key={i} className="aspect-[2/3] rounded-md" />
             ))}
@@ -92,7 +92,7 @@ export default function Watchlist() {
 
             {/* All Tab */}
             <TabsContent value="all">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
                 {watchlistShows.map((show) => (
                   <ShowCard key={`show-${show.id}`} show={show} />
                 ))}
@@ -105,7 +105,7 @@ export default function Watchlist() {
             {/* Shows Tab */}
             <TabsContent value="shows">
               {watchlistShows.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
                   {watchlistShows.map((show) => (
                     <ShowCard key={show.id} show={show} />
                   ))}
@@ -120,7 +120,7 @@ export default function Watchlist() {
             {/* Movies Tab */}
             <TabsContent value="movies">
               {watchlistMovies.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
                   {watchlistMovies.map((movie) => (
                     <MovieCard key={movie.id} movie={movie} />
                   ))}

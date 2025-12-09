@@ -19,13 +19,13 @@ export default function BrowseShows() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
             {[...Array(20)].map((_, i) => (
               <Skeleton key={i} className="aspect-[2/3]" />
             ))}
           </div>
         ) : shows && shows.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
             {shows.map((show) => (
               <ShowCard key={show.id} show={show} />
             ))}

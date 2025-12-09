@@ -65,7 +65,7 @@ export default function Category() {
       <div className="min-h-screen">
         <div className="container mx-auto px-4 py-8">
           <Skeleton className="h-10 w-64 mb-8" />
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
             {[...Array(15)].map((_, i) => (
               <Skeleton key={i} className="aspect-[2/3]" />
             ))}
@@ -111,7 +111,7 @@ export default function Category() {
           {/* All Tab */}
           <TabsContent value="all">
             {categoryShows.length + categoryMovies.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
                 {categoryShows.map((show) => (
                   <ShowCard key={`show-${show.id}`} show={show} />
                 ))}
@@ -131,7 +131,7 @@ export default function Category() {
           {/* Shows Tab */}
           <TabsContent value="shows">
             {categoryShows.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
                 {categoryShows.map((show) => (
                   <ShowCard key={show.id} show={show} />
                 ))}
@@ -148,7 +148,7 @@ export default function Category() {
           {/* Movies Tab */}
           <TabsContent value="movies">
             {categoryMovies.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
                 {categoryMovies.map((movie) => (
                   <MovieCard key={movie.id} movie={movie} />
                 ))}

@@ -19,7 +19,7 @@ export default function Trending() {
     return (
       <div className="min-h-screen container mx-auto px-4 py-8">
         <Skeleton className="h-12 w-64 mb-8" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
           {[...Array(12)].map((_, i) => (
             <Skeleton key={i} className="aspect-[2/3]" />
           ))}
@@ -47,7 +47,7 @@ export default function Trending() {
 
       {/* Content Grid */}
       {trendingContent.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
           {trendingContent.map((item) => (
             <ShowCard key={item.id} show={item} orientation="portrait" />
           ))}

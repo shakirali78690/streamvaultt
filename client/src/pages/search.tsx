@@ -258,13 +258,13 @@ export default function Search() {
               {/* All Tab */}
               <TabsContent value="all">
                 {isLoading ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
                     {[...Array(12)].map((_, i) => (
                       <Skeleton key={i} className="aspect-[2/3]" />
                     ))}
                   </div>
                 ) : filteredShows.length + filteredMovies.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
                     {filteredShows.map((show) => (
                       <ShowCard key={`show-${show.id}`} show={show} />
                     ))}
@@ -286,13 +286,13 @@ export default function Search() {
               {/* Shows Tab */}
               <TabsContent value="shows">
                 {isLoading ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
                     {[...Array(12)].map((_, i) => (
                       <Skeleton key={i} className="aspect-[2/3]" />
                     ))}
                   </div>
                 ) : filteredShows.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
                     {filteredShows.map((show) => (
                       <ShowCard key={show.id} show={show} />
                     ))}
@@ -311,13 +311,13 @@ export default function Search() {
               {/* Movies Tab */}
               <TabsContent value="movies">
                 {isLoading ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
                     {[...Array(12)].map((_, i) => (
                       <Skeleton key={i} className="aspect-[2/3]" />
                     ))}
                   </div>
                 ) : filteredMovies.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
                     {filteredMovies.map((movie) => (
                       <MovieCard key={movie.id} movie={movie} />
                     ))}
