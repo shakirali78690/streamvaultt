@@ -51,6 +51,11 @@ export default function SitemapPage() {
         description="Complete navigation guide to StreamVault. Find all pages, shows, movies, and categories available on our streaming platform."
         canonical="https://streamvault.live/sitemap"
       />
+      {/* Adsterra Native Banner */}
+      <div className="flex justify-center py-4">
+        <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+      </div>
+
       {/* Header */}
       <div className="border-b bg-card">
         <div className="container mx-auto px-4 py-8">

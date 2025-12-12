@@ -196,6 +196,11 @@ export default function Search() {
         description="Search for your favorite movies and TV shows on StreamVault. Filter by genre, year, and more."
         canonical="https://streamvault.live/search"
       />
+      {/* Adsterra Native Banner */}
+      <div className="flex justify-center py-4">
+        <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+      </div>
+
       <div className="container mx-auto px-4 py-8">
         {/* Search Header */}
         <div className="mb-8">

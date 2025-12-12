@@ -9,6 +9,11 @@ export default function Contact() {
         description="Get in touch with StreamVault. Have questions, feedback, or need support? We're here to help you 24/7."
         canonical="https://streamvault.live/contact"
       />
+      {/* Adsterra Native Banner */}
+      <div className="flex justify-center py-4">
+        <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+      </div>
+
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl font-bold mb-4">Contact Us</h1>

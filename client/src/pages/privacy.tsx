@@ -8,6 +8,11 @@ export default function PrivacyPolicy() {
         description="Learn how StreamVault collects, uses, and protects your personal information. We value your privacy and are committed to transparency."
         canonical="https://streamvault.live/privacy"
       />
+      {/* Adsterra Native Banner */}
+      <div className="flex justify-center py-4">
+        <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+      </div>
+
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
         

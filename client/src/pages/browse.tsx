@@ -151,6 +151,11 @@ export default function Browse() {
           </p>
         </div>
 
+        {/* Adsterra Native Banner */}
+        <div className="flex justify-center py-4 mb-6">
+          <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+        </div>
+
         {/* Filters */}
         <div className="flex flex-col gap-4 mb-8">
           {/* Search */}

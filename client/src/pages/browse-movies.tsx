@@ -16,6 +16,11 @@ export default function BrowseMovies() {
         description="Browse our complete collection of movies. Watch Hollywood blockbusters, indie films, and international cinema free in HD."
         canonical="https://streamvault.live/browse/movies"
       />
+      {/* Adsterra Native Banner */}
+      <div className="flex justify-center py-4">
+        <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+      </div>
+
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">All Movies</h1>

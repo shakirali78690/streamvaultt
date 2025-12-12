@@ -58,6 +58,11 @@ export default function MoviesPage() {
           <MovieContentRow title="Action & Thriller" movies={action} />
         )}
 
+        {/* Adsterra Native Banner */}
+        <div className="flex justify-center py-4">
+          <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+        </div>
+
         {drama.length > 0 && <MovieContentRow title="Drama & Romance" movies={drama} />}
 
         {comedy.length > 0 && <MovieContentRow title="Comedy" movies={comedy} />}

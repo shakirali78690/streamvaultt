@@ -163,6 +163,11 @@ export default function HelpCenter() {
         description="Get help with StreamVault. Find answers to common questions about streaming, playback issues, watchlist management, and more."
         canonical="https://streamvault.live/help"
       />
+      {/* Adsterra Native Banner */}
+      <div className="flex justify-center py-4">
+        <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+      </div>
+
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">

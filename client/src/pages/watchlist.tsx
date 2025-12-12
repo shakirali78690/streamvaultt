@@ -52,6 +52,11 @@ export default function Watchlist() {
         description="Your personal watchlist on StreamVault. Keep track of movies and TV shows you want to watch."
         canonical="https://streamvault.live/watchlist"
       />
+      {/* Adsterra Native Banner */}
+      <div className="flex justify-center py-4">
+        <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+      </div>
+
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">

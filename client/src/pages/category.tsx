@@ -93,6 +93,11 @@ export default function Category() {
         description={`Watch the best ${categoryName} movies and TV shows free in HD on StreamVault. Stream ${categoryName.toLowerCase()} content instantly.`}
         canonical={`https://streamvault.live/category/${slug}`}
       />
+      {/* Adsterra Native Banner */}
+      <div className="flex justify-center py-4">
+        <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+      </div>
+
       <div className="container mx-auto px-4 py-8">
         <h1
           className="text-3xl md:text-4xl font-bold mb-8"

@@ -100,6 +100,11 @@ export default function ReportIssue() {
         description="Report broken videos, playback issues, or other problems on StreamVault. Help us improve your streaming experience."
         canonical="https://streamvault.live/report"
       />
+      {/* Adsterra Native Banner */}
+      <div className="flex justify-center py-4">
+        <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+      </div>
+
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">

@@ -52,6 +52,11 @@ export default function Trending() {
         </p>
       </div>
 
+      {/* Adsterra Native Banner */}
+      <div className="flex justify-center py-4 mb-6">
+        <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+      </div>
+
       {/* Content Grid */}
       {trendingContent.length > 0 ? (
         <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
