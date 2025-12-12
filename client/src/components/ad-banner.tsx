@@ -25,7 +25,7 @@ export function AdBanner() {
   }, []);
 
   return (
-    <div className="flex justify-center my-6">
+    <div className="hidden md:flex justify-center my-6">
       <div ref={adRef} className="ad-banner-container"></div>
     </div>
   );
