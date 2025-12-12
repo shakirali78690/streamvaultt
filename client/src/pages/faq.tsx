@@ -1,6 +1,5 @@
 import { ChevronDown } from "lucide-react";
 import { SEO } from "@/components/seo";
-import { AdBanner } from "@/components/ad-banner";
 import { useState } from "react";
 
 export default function FAQ() {

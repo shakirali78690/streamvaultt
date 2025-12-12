@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { ShowCard } from "@/components/show-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SEO } from "@/components/seo";
-import { AdBanner } from "@/components/ad-banner";
 import type { Show } from "@shared/schema";
 
 export default function BrowseShows() {
@@ -38,9 +37,6 @@ export default function BrowseShows() {
                 <ShowCard key={show.id} show={show} />
               ))}
             </div>
-            
-            {/* Ad Banner */}
-            <AdBanner />
             
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
               {shows.slice(12).map((show) => (

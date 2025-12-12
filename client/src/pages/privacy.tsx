@@ -1,5 +1,4 @@
 import { SEO } from "@/components/seo";
-import { AdBanner } from "@/components/ad-banner";
 
 export default function PrivacyPolicy() {
   return (
@@ -127,9 +126,6 @@ export default function PrivacyPolicy() {
               <li>Data portability</li>
             </ul>
           </section>
-
-          {/* Ad Banner */}
-          <AdBanner />
         </div>
       </div>
     </div>

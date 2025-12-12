@@ -1,5 +1,4 @@
 import { SEO } from "@/components/seo";
-import { AdBanner } from "@/components/ad-banner";
 
 export default function TermsOfService() {
   return (

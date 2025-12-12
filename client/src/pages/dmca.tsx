@@ -1,6 +1,5 @@
 import { Mail, AlertTriangle } from "lucide-react";
 import { SEO } from "@/components/seo";
-import { AdBanner } from "@/components/ad-banner";
 
 export default function DMCA() {
   return (

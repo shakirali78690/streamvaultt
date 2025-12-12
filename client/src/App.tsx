@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Chatbot } from "@/components/chatbot";
+import { AdBanner } from "@/components/ad-banner";
 import Home from "@/pages/home";
 import ShowDetail from "@/pages/show-detail";
 import Watch from "@/pages/watch";
@@ -72,6 +73,9 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </main>
+      <div className="container mx-auto px-4">
+        <AdBanner />
+      </div>
       <Footer />
       <Chatbot />
     </>

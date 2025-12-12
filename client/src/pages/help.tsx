@@ -1,7 +1,6 @@
 import { Search, Play, Bookmark, Settings, HelpCircle, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SEO } from "@/components/seo";
-import { AdBanner } from "@/components/ad-banner";
 import { useState } from "react";
 
 export default function HelpCenter() {

@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Search, Filter, Film, Tv, Grid, List, X } from "lucide-react";
 import { SEO } from "@/components/seo";
-import { AdBanner } from "@/components/ad-banner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -262,9 +261,6 @@ export default function Browse() {
         <div className="mb-4 text-sm text-muted-foreground">
           Showing {filteredContent.length} results
         </div>
-
-        {/* Ad Banner */}
-        <AdBanner />
 
         {/* Content Grid/List */}
         {filteredContent.length === 0 ? (

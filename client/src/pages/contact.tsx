@@ -1,6 +1,5 @@
 import { Mail, MessageSquare, HelpCircle, Twitter, Instagram, Send, Facebook } from "lucide-react";
 import { SEO } from "@/components/seo";
-import { AdBanner } from "@/components/ad-banner";
 
 export default function Contact() {
   return (
@@ -169,9 +168,6 @@ export default function Contact() {
             </div>
           </div>
         </div>
-
-        {/* Ad Banner */}
-        <AdBanner />
       </div>
     </div>
   );
