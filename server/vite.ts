@@ -278,6 +278,75 @@ export function serveStatic(app: Express) {
       return;
     }
 
+    // Handle blog movie pages
+    const blogMovieMatch = requestPath.match(/^\/blog\/movie\/([^\/]+)/);
+    if (blogMovieMatch) {
+      const slug = blogMovieMatch[1];
+      console.log(`[Meta Tags] Blog movie page: ${slug}`);
+      
+      import('./storage.js').then(({ storage }) => {
+        storage.getAllMovies().then(movies => {
+          const movie = movies.find((m: any) => m.slug === slug);
+          if (movie) {
+            let html = fs.readFileSync(indexPath, 'utf-8');
+            const title = escapeHtml(`${movie.title} (${movie.year}) - Complete Guide, Cast & Reviews`);
+            const description = escapeHtml(`Everything about ${movie.title}: Plot, cast, ratings, and more. ${movie.description.slice(0, 150)}...`);
+            const url = `https://streamvault.live/blog/movie/${slug}`;
+            const image = movie.backdropUrl || movie.posterUrl;
+
+            const metaTags = `
+    <meta property="og:title" content="${title} | StreamVault">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="${image}">
+    <meta property="og:url" content="${url}">
+    <meta property="og:type" content="video.movie">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="${image}">
+    <title>${title} | StreamVault</title>`;
+
+            injectMetaAndServe(html, metaTags);
+          } else {
+            res.sendFile(indexPath);
+          }
+        }).catch(() => res.sendFile(indexPath));
+      }).catch(() => res.sendFile(indexPath));
+      return;
+    }
+
+    // Handle blog show pages
+    const blogShowMatch = requestPath.match(/^\/blog\/show\/([^\/]+)/);
+    if (blogShowMatch) {
+      const slug = blogShowMatch[1];
+      console.log(`[Meta Tags] Blog show page: ${slug}`);
+      
+      import('./storage.js').then(({ storage }) => {
+        storage.getShowBySlug(slug).then(show => {
+          if (show) {
+            let html = fs.readFileSync(indexPath, 'utf-8');
+            const title = escapeHtml(`${show.title} (${show.year}) - Complete Guide, Cast & Reviews`);
+            const description = escapeHtml(`Everything about ${show.title}: Plot, cast, ratings, and more. ${show.description.slice(0, 150)}...`);
+            const url = `https://streamvault.live/blog/show/${slug}`;
+            const image = show.backdropUrl || show.posterUrl;
+
+            const metaTags = `
+    <meta property="og:title" content="${title} | StreamVault">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="${image}">
+    <meta property="og:url" content="${url}">
+    <meta property="og:type" content="video.tv_show">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="${image}">
+    <title>${title} | StreamVault</title>`;
+
+            injectMetaAndServe(html, metaTags);
+          } else {
+            res.sendFile(indexPath);
+          }
+        }).catch(() => res.sendFile(indexPath));
+      }).catch(() => res.sendFile(indexPath));
+      return;
+    }
+
     // Handle movie watch pages
     const watchMovieMatch = requestPath.match(/^\/watch-movie\/([^\/]+)/);
     if (watchMovieMatch) {
