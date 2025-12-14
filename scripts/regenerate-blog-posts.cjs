@@ -101,7 +101,11 @@ function generateMovieBlogPost(localMovie, tmdbData) {
   const popularity = movie.popularity?.toFixed(0) || 0;
   
   const realReviews = reviews?.results?.slice(0, 3) || [];
-  const reviewExcerpts = realReviews.map(r => `"${r.content.substring(0, 200)}..." - ${r.author}`).join('\n\n');
+  // Format reviews properly - show FULL content, no truncation
+  const reviewExcerpts = realReviews.map(r => {
+    const content = r.content.replace(/\r\n/g, '\n').trim();
+    return `**${r.author}** writes:\n\n"${content}"`;
+  }).join('\n\n---\n\n');
   
   const keywordList = keywords?.keywords?.slice(0, 10).map(k => k.name) || [];
   
@@ -177,7 +181,11 @@ function generateShowBlogPost(localShow, tmdbData) {
   const lastAirDate = show.last_air_date || '';
   
   const realReviews = reviews?.results?.slice(0, 3) || [];
-  const reviewExcerpts = realReviews.map(r => `"${r.content.substring(0, 200)}..." - ${r.author}`).join('\n\n');
+  // Format reviews properly - show FULL content, no truncation
+  const reviewExcerpts = realReviews.map(r => {
+    const content = r.content.replace(/\r\n/g, '\n').trim();
+    return `**${r.author}** writes:\n\n"${content}"`;
+  }).join('\n\n---\n\n');
   
   const keywordList = keywords?.results?.slice(0, 10).map(k => k.name) || [];
   

@@ -357,9 +357,12 @@ async function main() {
     const firstAirDate = show.first_air_date || '';
     const lastAirDate = show.last_air_date || '';
     
-    // Get real reviews from TMDB
+    // Get real reviews from TMDB - show FULL content, no truncation
     const realReviews = reviews?.results?.slice(0, 3) || [];
-    const reviewExcerpts = realReviews.map(r => `"${r.content.substring(0, 200)}..." - ${r.author}`).join('\n\n');
+    const reviewExcerpts = realReviews.map(r => {
+      const content = r.content.replace(/\r\n/g, '\n').trim();
+      return `**${r.author}** writes:\n\n"${content}"`;
+    }).join('\n\n---\n\n');
     
     // Get keywords
     const keywordList = keywords?.results?.slice(0, 10).map(k => k.name) || [];

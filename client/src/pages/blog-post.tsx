@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { 
   Calendar, Clock, Star, Users, DollarSign, Globe, 
-  Film, Tv, ChevronLeft, Share2, Play, Award, Lightbulb, Clapperboard, FileText
+  Film, Tv, ChevronLeft, Share2, Play, Award, Lightbulb, Clapperboard, FileText, Youtube
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -99,6 +99,16 @@ export default function BlogPost() {
     try {
       triviaData = JSON.parse(blogPost.trivia);
     } catch {}
+  }
+
+  // Extract trailer URL from trivia
+  let trailerUrl: string | null = null;
+  const trailerItem = triviaData.find(item => item.includes('youtube.com/watch'));
+  if (trailerItem) {
+    const match = trailerItem.match(/https:\/\/www\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+    if (match) {
+      trailerUrl = match[1]; // Just the video ID
+    }
   }
 
   if (isLoading) {
@@ -239,6 +249,27 @@ export default function BlogPost() {
               </div>
             </section>
 
+            {/* YouTube Trailer */}
+            {trailerUrl && (
+              <section>
+                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <Youtube className="w-6 h-6 text-red-500" />
+                  Official Trailer
+                </h2>
+                <div className="bg-card border border-border rounded-lg overflow-hidden">
+                  <div className="aspect-video">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${trailerUrl}`}
+                      title={`${content.title} - Official Trailer`}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                    />
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* Genres */}
             <section>
               <h2 className="text-2xl font-bold mb-4">Genres</h2>
@@ -292,9 +323,15 @@ export default function BlogPost() {
                   Our Review
                 </h2>
                 <div className="bg-card border border-border rounded-lg p-6">
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {blogPost.review}
-                  </p>
+                  <div 
+                    className="text-muted-foreground leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{
+                      __html: blogPost.review
+                        .replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground">$1</strong>')
+                        .replace(/---/g, '<hr class="my-4 border-border">')
+                        .replace(/\n/g, '<br>')
+                    }}
+                  />
                 </div>
               </section>
             )}

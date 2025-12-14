@@ -169,7 +169,7 @@ export function Footer() {
                 data-testid="button-social-facebook"
               >
                 <a
-                  href="https://www.facebook.com/streamvault.live/"
+                  href="https://www.facebook.com/profile.php?id=61584742806526"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Facebook"
