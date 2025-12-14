@@ -28,26 +28,74 @@ function getAvatarColor(name: string): string {
   return colors[index];
 }
 
+// Format comment text with @mentions highlighted in red
+function formatCommentWithMentions(text: string): React.ReactNode {
+  const mentionRegex = /@(\w+)/g;
+  const parts = text.split(mentionRegex);
+  
+  return parts.map((part, index) => {
+    // Every odd index is a captured username
+    if (index % 2 === 1) {
+      return <span key={index} className="text-red-500 font-medium">@{part}</span>;
+    }
+    return part;
+  });
+}
+
 // YouTube-style comment component
+// Helper to remove emojis from string
+function removeEmojis(text: string): string {
+  // Regex for emojis (ranges covering most common emojis)
+  return text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+}
+
+// Calculate total replies recursively
+function countTotalReplies(comment: CommentWithReplies): number {
+  if (!comment.replies || comment.replies.length === 0) {
+    return 0;
+  }
+  return comment.replies.reduce((total, reply) => {
+    return total + 1 + countTotalReplies(reply);
+  }, 0);
+}
+
 function CommentItem({ 
   comment, 
   episodeId, 
   movieId, 
   userName, 
   setUserName,
-  depth = 0 
+  isNameSaved,
+  setIsNameSaved,
+  depth = 0,
+  parentUserName,
+  parentLikes
 }: { 
   comment: CommentWithReplies; 
   episodeId?: string; 
   movieId?: string;
   userName: string;
   setUserName: (name: string) => void;
+  isNameSaved?: boolean;
+  setIsNameSaved?: (saved: boolean) => void;
   depth?: number;
+  parentUserName?: string;
+  parentLikes?: number;
 }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [showReplies, setShowReplies] = useState(false);
-  const [likes, setLikes] = useState(comment.likes || Math.floor(Math.random() * 50));
+  
+  // Initialize likes - if reply, ensure it has fewer likes than parent
+  const [likes, setLikes] = useState(() => {
+    const baseLikes = comment.likes || Math.floor(Math.random() * 50);
+    if (parentLikes !== undefined) {
+      // For replies, ensure likes are significantly less than parent (e.g., max 30% of parent or random small number)
+      return Math.min(baseLikes, Math.floor(parentLikes * 0.3), Math.max(1, parentLikes - 1));
+    }
+    return baseLikes;
+  });
+
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
   const queryClient = useQueryClient();
@@ -80,7 +128,11 @@ function CommentItem({
       });
       setReplyText("");
       setShowReplyForm(false);
-      localStorage.setItem("streamvault_username", userName);
+      // Only save username if it's at least 2 characters
+      if (userName.trim().length >= 2) {
+        localStorage.setItem("streamvault_username", userName.trim());
+        if (setIsNameSaved) setIsNameSaved(true);
+      }
     },
   });
 
@@ -121,12 +173,24 @@ function CommentItem({
   const avatarColor = getAvatarColor(comment.userName);
   const firstLetter = comment.userName.charAt(0).toUpperCase();
 
+  // Prepend @mention if this is a reply
+  const commentText = parentUserName 
+    ? `@${parentUserName.toLowerCase().replace(/\s+/g, '')} ${comment.comment}`
+    : comment.comment;
+
   return (
-    <div className={depth > 0 ? "ml-12" : ""}>
+    <div className="relative">
+      {/* Row 1: Main Comment */}
       <div className="flex gap-3">
-        {/* Avatar */}
-        <div className={`w-10 h-10 rounded-full ${avatarColor} flex items-center justify-center text-white font-medium text-sm flex-shrink-0`}>
-          {firstLetter}
+        {/* Avatar Column */}
+        <div className="flex flex-col items-center relative">
+          <div className={`w-10 h-10 rounded-full ${avatarColor} flex items-center justify-center text-white font-medium text-sm flex-shrink-0 relative z-10`}>
+            {firstLetter}
+          </div>
+          {/* Vertical line from avatar down - always show if has replies */}
+          {hasReplies && (
+            <div className="w-0.5 bg-muted-foreground/30 flex-1" />
+          )}
         </div>
         
         {/* Comment Content */}
@@ -142,8 +206,10 @@ function CommentItem({
             </button>
           </div>
           
-          {/* Comment Text */}
-          <p className="text-sm whitespace-pre-wrap break-words mb-2 text-foreground">{comment.comment}</p>
+          {/* Comment Text with @mentions highlighted */}
+          <p className="text-sm whitespace-pre-wrap break-words mb-2 text-foreground">
+            {formatCommentWithMentions(commentText)}
+          </p>
           
           {/* Actions: Like, Dislike, Reply */}
           <div className="flex items-center gap-1">
@@ -177,12 +243,12 @@ function CommentItem({
                 {userName ? userName.charAt(0).toUpperCase() : '?'}
               </div>
               <div className="flex-1">
-                {!userName && (
+                {(!isNameSaved && !localStorage.getItem("streamvault_username")) && (
                   <Input
                     type="text"
                     placeholder="Your name"
                     value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
+                    onChange={(e) => setUserName(removeEmojis(e.target.value))}
                     maxLength={50}
                     className="mb-2 bg-transparent border-0 border-b border-muted rounded-none focus:border-primary px-0"
                   />
@@ -222,42 +288,105 @@ function CommentItem({
               </div>
             </div>
           )}
-
-          {/* Replies Toggle */}
-          {hasReplies && (
-            <button
-              onClick={() => setShowReplies(!showReplies)}
-              className="flex items-center gap-1 mt-2 text-primary text-sm font-medium hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors"
-            >
-              <ChevronDown className={`w-4 h-4 transition-transform ${showReplies ? 'rotate-180' : ''}`} />
-              {showReplies ? 'Hide' : ''} {comment.replies!.length} {comment.replies!.length === 1 ? 'reply' : 'replies'}
-            </button>
-          )}
-
-          {/* Nested Replies */}
-          {hasReplies && showReplies && (
-            <div className="mt-3 space-y-4">
-              {comment.replies!.map((reply) => (
-                <CommentItem
-                  key={reply.id}
-                  comment={reply}
-                  episodeId={episodeId}
-                  movieId={movieId}
-                  userName={userName}
-                  setUserName={setUserName}
-                  depth={depth + 1}
-                />
-              ))}
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Row 2: Replies Toggle (Only if hasReplies) */}
+      {hasReplies && (
+        <div className="flex gap-3">
+          {/* Connector Column */}
+          <div className="w-10 flex-shrink-0 relative">
+            <svg 
+              className="absolute top-0 left-0 w-full h-full text-muted-foreground/30 pointer-events-none" 
+              style={{ overflow: 'visible' }}
+            >
+              {/* 
+                 If collapsed: Vertical to middle, curve right to button.
+                 If expanded: Vertical straight down to connect to nested replies.
+              */}
+              {showReplies ? (
+                <line x1="20" y1="0" x2="20" y2="100%" stroke="currentColor" strokeWidth="2" />
+              ) : (
+                <path d="M 20 0 L 20 16 Q 20 26 35 26" stroke="currentColor" strokeWidth="2" fill="none" />
+              )}
+            </svg>
+          </div>
+          
+          {/* Button Column */}
+          <div className="flex-1 py-1">
+            <button
+              onClick={() => setShowReplies(!showReplies)}
+              className="flex items-center gap-2 text-primary text-sm font-bold hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors w-fit"
+            >
+              {showReplies ? (
+                <ChevronDown className="w-4 h-4 rotate-180" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+              {(() => {
+                const totalReplies = countTotalReplies(comment);
+                return `${showReplies ? 'Hide' : ''} ${totalReplies} ${totalReplies === 1 ? 'reply' : 'replies'}`;
+              })()}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Row 3: Nested Replies Row */}
+      {hasReplies && showReplies && (
+        <div className="flex flex-col w-full">
+          {comment.replies!.map((reply, index) => {
+            const isLast = index === comment.replies!.length - 1;
+            return (
+              <div key={reply.id} className="flex">
+                {/* Connector Column */}
+                <div className="w-10 flex-shrink-0 relative" style={{ minHeight: '48px' }}>
+                  <svg 
+                    className="absolute top-0 left-0 pointer-events-none text-muted-foreground/30" 
+                    style={{ overflow: 'visible', width: '60px', height: '100%' }}
+                    preserveAspectRatio="none"
+                  >
+                    {/* For non-last: vertical line from curve end (20px) to bottom */}
+                    {!isLast && (
+                      <line x1="20" y1="20" x2="20" y2="100%" stroke="currentColor" strokeWidth="2" />
+                    )}
+                    
+                    {/* Curve only - L shape: vertical down to 12, curve corner, horizontal to avatar */}
+                    <path 
+                      d="M 20 0 L 20 12 Q 20 20 28 20 L 60 20" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      fill="none"
+                    />
+                  </svg>
+                </div>
+                {/* Reply Content */}
+                <div className="flex-1">
+                  <CommentItem
+                    comment={reply}
+                    episodeId={episodeId}
+                    movieId={movieId}
+                    userName={userName}
+                    setUserName={setUserName}
+                    isNameSaved={isNameSaved}
+                    setIsNameSaved={setIsNameSaved}
+                    depth={depth + 1}
+                    parentUserName={comment.userName}
+                    parentLikes={likes}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 export function CommentsSection({ episodeId, movieId }: CommentsSectionProps) {
   const [userName, setUserName] = useState("");
+  const [isNameSaved, setIsNameSaved] = useState(false);
   const [comment, setComment] = useState("");
   const queryClient = useQueryClient();
 
@@ -266,6 +395,7 @@ export function CommentsSection({ episodeId, movieId }: CommentsSectionProps) {
     const savedName = localStorage.getItem("streamvault_username");
     if (savedName) {
       setUserName(savedName);
+      setIsNameSaved(true);
     }
   }, []);
 
@@ -335,7 +465,11 @@ export function CommentsSection({ episodeId, movieId }: CommentsSectionProps) {
           : [`/api/comments/movie/${movieId}`],
       });
       setComment("");
-      localStorage.setItem("streamvault_username", userName);
+      // Only save username if it's at least 2 characters
+      if (userName.trim().length >= 2) {
+        localStorage.setItem("streamvault_username", userName.trim());
+        setIsNameSaved(true);
+      }
     },
     onError: (error) => {
       alert(`Failed to post comment: ${error.message}`);
@@ -365,12 +499,12 @@ export function CommentsSection({ episodeId, movieId }: CommentsSectionProps) {
         </div>
         <div className="flex-1">
           <form onSubmit={handleSubmit}>
-            {!userName && (
+            {!isNameSaved && (
               <Input
                 type="text"
                 placeholder="Your name"
                 value={userName}
-                onChange={(e) => setUserName(e.target.value)}
+                onChange={(e) => setUserName(removeEmojis(e.target.value))}
                 maxLength={50}
                 className="mb-2 bg-transparent border-0 border-b border-muted rounded-none focus:border-primary px-0 focus-visible:ring-0"
               />
@@ -428,6 +562,8 @@ export function CommentsSection({ episodeId, movieId }: CommentsSectionProps) {
               movieId={movieId}
               userName={userName}
               setUserName={setUserName}
+              isNameSaved={isNameSaved}
+              setIsNameSaved={setIsNameSaved}
             />
           ))
         ) : (
