@@ -3,8 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { MessageCircle, Send, Reply, ChevronDown, ChevronUp } from "lucide-react";
+import { MessageCircle, Send, ThumbsUp, ThumbsDown, ChevronDown, MoreVertical } from "lucide-react";
 import type { Comment } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
@@ -15,9 +14,21 @@ interface CommentsSectionProps {
 
 interface CommentWithReplies extends Comment {
   replies?: CommentWithReplies[];
+  likes?: number;
 }
 
-// Single comment component with reply functionality
+// Generate avatar color based on username
+function getAvatarColor(name: string): string {
+  const colors = [
+    'bg-red-500', 'bg-pink-500', 'bg-purple-500', 'bg-indigo-500',
+    'bg-blue-500', 'bg-cyan-500', 'bg-teal-500', 'bg-green-500',
+    'bg-yellow-500', 'bg-orange-500'
+  ];
+  const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+  return colors[index];
+}
+
+// YouTube-style comment component
 function CommentItem({ 
   comment, 
   episodeId, 
@@ -35,7 +46,10 @@ function CommentItem({
 }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyText, setReplyText] = useState("");
-  const [showReplies, setShowReplies] = useState(true);
+  const [showReplies, setShowReplies] = useState(false);
+  const [likes, setLikes] = useState(comment.likes || Math.floor(Math.random() * 50));
+  const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
   const queryClient = useQueryClient();
 
   const postReply = useMutation({
@@ -80,116 +94,164 @@ function CommentItem({
     });
   };
 
+  const handleLike = () => {
+    if (liked) {
+      setLikes(likes - 1);
+      setLiked(false);
+    } else {
+      setLikes(likes + (disliked ? 1 : 1));
+      setLiked(true);
+      setDisliked(false);
+    }
+  };
+
+  const handleDislike = () => {
+    if (disliked) {
+      setDisliked(false);
+    } else {
+      if (liked) {
+        setLikes(likes - 1);
+        setLiked(false);
+      }
+      setDisliked(true);
+    }
+  };
+
   const hasReplies = comment.replies && comment.replies.length > 0;
+  const avatarColor = getAvatarColor(comment.userName);
+  const firstLetter = comment.userName.charAt(0).toUpperCase();
 
   return (
-    <div className={depth > 0 ? "ml-6 border-l-2 border-muted pl-4" : ""}>
-      <Card className="p-4">
-        <div className="flex items-start justify-between mb-2">
-          <div>
-            <p className="font-semibold">{comment.userName}</p>
-            <p className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-            </p>
-          </div>
+    <div className={depth > 0 ? "ml-12" : ""}>
+      <div className="flex gap-3">
+        {/* Avatar */}
+        <div className={`w-10 h-10 rounded-full ${avatarColor} flex items-center justify-center text-white font-medium text-sm flex-shrink-0`}>
+          {firstLetter}
         </div>
-        <p className="text-sm whitespace-pre-wrap break-words mb-3">{comment.comment}</p>
         
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowReplyForm(!showReplyForm)}
-            className="text-xs"
-          >
-            <Reply className="w-3 h-3 mr-1" />
-            Reply
-          </Button>
+        {/* Comment Content */}
+        <div className="flex-1 min-w-0">
+          {/* Header: Username and timestamp */}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-medium text-sm text-foreground">@{comment.userName.toLowerCase().replace(/\s+/g, '')}</span>
+            <span className="text-xs text-muted-foreground">
+              {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+            </span>
+            <button className="ml-auto p-1 hover:bg-muted rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              <MoreVertical className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
           
-          {hasReplies && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowReplies(!showReplies)}
-              className="text-xs"
+          {/* Comment Text */}
+          <p className="text-sm whitespace-pre-wrap break-words mb-2 text-foreground">{comment.comment}</p>
+          
+          {/* Actions: Like, Dislike, Reply */}
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={handleLike}
+              className={`p-2 hover:bg-muted rounded-full transition-colors ${liked ? 'text-primary' : 'text-muted-foreground'}`}
             >
-              {showReplies ? (
-                <>
-                  <ChevronUp className="w-3 h-3 mr-1" />
-                  Hide {comment.replies!.length} {comment.replies!.length === 1 ? 'reply' : 'replies'}
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="w-3 h-3 mr-1" />
-                  Show {comment.replies!.length} {comment.replies!.length === 1 ? 'reply' : 'replies'}
-                </>
-              )}
-            </Button>
+              <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+            </button>
+            <span className="text-xs text-muted-foreground min-w-[20px]">
+              {likes > 0 ? (likes >= 1000 ? `${(likes/1000).toFixed(1)}K` : likes) : ''}
+            </span>
+            <button 
+              onClick={handleDislike}
+              className={`p-2 hover:bg-muted rounded-full transition-colors ${disliked ? 'text-primary' : 'text-muted-foreground'}`}
+            >
+              <ThumbsDown className={`w-4 h-4 ${disliked ? 'fill-current' : ''}`} />
+            </button>
+            <button 
+              onClick={() => setShowReplyForm(!showReplyForm)}
+              className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted rounded-full transition-colors ml-2"
+            >
+              Reply
+            </button>
+          </div>
+
+          {/* Reply Form */}
+          {showReplyForm && (
+            <div className="mt-3 flex gap-3">
+              <div className={`w-8 h-8 rounded-full ${userName ? getAvatarColor(userName) : 'bg-muted'} flex items-center justify-center text-white font-medium text-xs flex-shrink-0`}>
+                {userName ? userName.charAt(0).toUpperCase() : '?'}
+              </div>
+              <div className="flex-1">
+                {!userName && (
+                  <Input
+                    type="text"
+                    placeholder="Your name"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    maxLength={50}
+                    className="mb-2 bg-transparent border-0 border-b border-muted rounded-none focus:border-primary px-0"
+                  />
+                )}
+                <form onSubmit={handleReplySubmit}>
+                  <Input
+                    type="text"
+                    placeholder={`Reply to @${comment.userName.toLowerCase().replace(/\s+/g, '')}...`}
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    maxLength={1000}
+                    className="bg-transparent border-0 border-b border-muted rounded-none focus:border-primary px-0"
+                  />
+                  <div className="flex justify-end gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowReplyForm(false);
+                        setReplyText("");
+                      }}
+                      className="rounded-full"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={postReply.isPending || !userName.trim() || !replyText.trim()}
+                      className="rounded-full bg-primary/20 text-primary hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
+                    >
+                      {postReply.isPending ? "..." : "Reply"}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Replies Toggle */}
+          {hasReplies && (
+            <button
+              onClick={() => setShowReplies(!showReplies)}
+              className="flex items-center gap-1 mt-2 text-primary text-sm font-medium hover:bg-primary/10 px-3 py-1.5 rounded-full transition-colors"
+            >
+              <ChevronDown className={`w-4 h-4 transition-transform ${showReplies ? 'rotate-180' : ''}`} />
+              {showReplies ? 'Hide' : ''} {comment.replies!.length} {comment.replies!.length === 1 ? 'reply' : 'replies'}
+            </button>
+          )}
+
+          {/* Nested Replies */}
+          {hasReplies && showReplies && (
+            <div className="mt-3 space-y-4">
+              {comment.replies!.map((reply) => (
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  episodeId={episodeId}
+                  movieId={movieId}
+                  userName={userName}
+                  setUserName={setUserName}
+                  depth={depth + 1}
+                />
+              ))}
+            </div>
           )}
         </div>
-
-        {/* Reply Form */}
-        {showReplyForm && (
-          <form onSubmit={handleReplySubmit} className="mt-4 space-y-3">
-            {!userName && (
-              <Input
-                type="text"
-                placeholder="Your name"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                maxLength={50}
-                required
-              />
-            )}
-            <Textarea
-              placeholder={`Reply to ${comment.userName}...`}
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              rows={2}
-              maxLength={1000}
-              required
-            />
-            <div className="flex gap-2">
-              <Button
-                type="submit"
-                size="sm"
-                disabled={postReply.isPending || !userName.trim() || !replyText.trim()}
-              >
-                <Send className="w-3 h-3 mr-1" />
-                {postReply.isPending ? "Posting..." : "Reply"}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowReplyForm(false);
-                  setReplyText("");
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        )}
-      </Card>
-
-      {/* Nested Replies */}
-      {hasReplies && showReplies && (
-        <div className="mt-2 space-y-2">
-          {comment.replies!.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              episodeId={episodeId}
-              movieId={movieId}
-              userName={userName}
-              setUserName={setUserName}
-              depth={depth + 1}
-            />
-          ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -289,68 +351,70 @@ export function CommentsSection({ episodeId, movieId }: CommentsSectionProps) {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-2">
-        <MessageCircle className="w-6 h-6" />
-        <h2 className="text-2xl font-bold">
-          Comments {totalComments > 0 && `(${totalComments})`}
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <h2 className="text-xl font-bold">
+          {totalComments} Comments
         </h2>
       </div>
 
-      {/* Comment Form */}
-      <Card className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="userName" className="block text-sm font-medium mb-2">
-              Your Name
-            </label>
+      {/* Comment Form - YouTube Style */}
+      <div className="flex gap-3">
+        <div className={`w-10 h-10 rounded-full ${userName ? getAvatarColor(userName) : 'bg-muted'} flex items-center justify-center text-white font-medium text-sm flex-shrink-0`}>
+          {userName ? userName.charAt(0).toUpperCase() : '?'}
+        </div>
+        <div className="flex-1">
+          <form onSubmit={handleSubmit}>
+            {!userName && (
+              <Input
+                type="text"
+                placeholder="Your name"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                maxLength={50}
+                className="mb-2 bg-transparent border-0 border-b border-muted rounded-none focus:border-primary px-0 focus-visible:ring-0"
+              />
+            )}
             <Input
-              id="userName"
               type="text"
-              placeholder="Enter your name (can be anything)"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              maxLength={50}
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="comment" className="block text-sm font-medium mb-2">
-              Comment
-            </label>
-            <Textarea
-              id="comment"
-              placeholder="Share your thoughts... (emojis welcome! 😊)"
+              placeholder="Add a comment..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              rows={4}
               maxLength={1000}
-              required
+              className="bg-transparent border-0 border-b border-muted rounded-none focus:border-primary px-0 focus-visible:ring-0"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              {comment.length}/1000 characters
-            </p>
-          </div>
-
-          <Button
-            type="submit"
-            disabled={postComment.isPending || !userName.trim() || !comment.trim()}
-            className="w-full sm:w-auto"
-          >
-            <Send className="w-4 h-4 mr-2" />
-            {postComment.isPending ? "Posting..." : "Post Comment"}
-          </Button>
-
+            {comment && (
+              <div className="flex justify-end gap-2 mt-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setComment("")}
+                  className="rounded-full"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={postComment.isPending || !userName.trim() || !comment.trim()}
+                  className="rounded-full bg-primary/20 text-primary hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
+                >
+                  {postComment.isPending ? "..." : "Comment"}
+                </Button>
+              </div>
+            )}
+          </form>
           {postComment.isError && (
             <p className="text-sm text-red-500 mt-2">
               Failed to post comment. Please try again.
             </p>
           )}
-        </form>
-      </Card>
+        </div>
+      </div>
 
       {/* Comments List */}
-      <div className="space-y-4">
+      <div className="space-y-5 mt-6">
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">
             Loading comments...
@@ -367,12 +431,12 @@ export function CommentsSection({ episodeId, movieId }: CommentsSectionProps) {
             />
           ))
         ) : (
-          <Card className="p-8 text-center">
-            <MessageCircle className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+          <div className="py-12 text-center">
+            <MessageCircle className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
             <p className="text-muted-foreground">
               No comments yet. Be the first to share your thoughts!
             </p>
-          </Card>
+          </div>
         )}
       </div>
     </div>
