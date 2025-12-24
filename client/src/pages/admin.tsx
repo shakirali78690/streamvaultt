@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Edit, Plus, Save, X, Upload, FileJson, LogOut } from "lucide-react";
+import { Trash2, Edit, Plus, Save, X, Upload, FileJson, LogOut, Mail, Send } from "lucide-react";
 import type { Show, Episode, Movie, BlogPost } from "@shared/schema";
 import { getAuthHeaders, logout as authLogout } from "@/lib/auth";
 
@@ -26,7 +26,7 @@ export default function AdminPage() {
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem("adminToken");
-      
+
       if (!token) {
         setLocation("/admin/login");
         return;
@@ -101,13 +101,14 @@ export default function AdminPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-9 mb-8">
+          <TabsList className="grid w-full grid-cols-10 mb-8">
             <TabsTrigger value="shows">Shows</TabsTrigger>
             <TabsTrigger value="movies">Movies</TabsTrigger>
             <TabsTrigger value="blog">Blog</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
             <TabsTrigger value="requests">Requests</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="newsletter">Newsletter</TabsTrigger>
             <TabsTrigger value="add-show">Add Show</TabsTrigger>
             <TabsTrigger value="add-episode">Add Episode</TabsTrigger>
             <TabsTrigger value="import">Import</TabsTrigger>
@@ -141,6 +142,11 @@ export default function AdminPage() {
           {/* Issue Reports Tab */}
           <TabsContent value="reports">
             <IssueReports />
+          </TabsContent>
+
+          {/* Newsletter Tab */}
+          <TabsContent value="newsletter">
+            <NewsletterManager />
           </TabsContent>
 
           {/* Add Show Tab */}
@@ -309,8 +315,8 @@ function ManageShows({ shows }: { shows: Show[] }) {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => handleEdit(show)}
                   >
@@ -371,8 +377,8 @@ function ManageShows({ shows }: { shows: Show[] }) {
             </DialogDescription>
           </DialogHeader>
           {editingShow && (
-            <EditShowForm 
-              show={editingShow} 
+            <EditShowForm
+              show={editingShow}
               onSave={(updates) => updateMutation.mutate({ id: editingShow.id, updates })}
               onCancel={() => setIsEditDialogOpen(false)}
               isLoading={updateMutation.isPending}
@@ -385,8 +391,8 @@ function ManageShows({ shows }: { shows: Show[] }) {
 }
 
 // Edit Show Form Component
-function EditShowForm({ show, onSave, onCancel, isLoading }: { 
-  show: Show; 
+function EditShowForm({ show, onSave, onCancel, isLoading }: {
+  show: Show;
   onSave: (updates: Partial<Show>) => void;
   onCancel: () => void;
   isLoading: boolean;
@@ -679,10 +685,10 @@ function AddShowForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Generate slug from title if not provided
     const slug = formData.slug || formData.title.toLowerCase().replace(/\s+/g, "-");
-    
+
     const showData = {
       ...formData,
       slug,
@@ -1111,7 +1117,7 @@ function ImportEpisodesForm() {
   const [importResult, setImportResult] = useState<any>(null);
 
   const baseFolder = "C:\\Users\\yawar\\Desktop\\StreamVault\\bulk-imports";
-  
+
   // Available JSON files in the folder (slug-named files)
   const availableFiles = [
     "stranger-things.json",
@@ -1180,7 +1186,7 @@ function ImportEpisodesForm() {
     "vincenzo.json",
     "wenderellas-diary.json",
   ];
-  
+
   const getFilePath = () => {
     if (useCustomPath) {
       return customPath;
@@ -1203,7 +1209,7 @@ function ImportEpisodesForm() {
     },
     onSuccess: (data) => {
       setImportResult(data.summary);
-      const message = data.summary?.showTitle 
+      const message = data.summary?.showTitle
         ? `Imported ${data.summary.episodesImported} episodes to "${data.summary.showTitle}"`
         : `Created ${data.summary?.showsCreated || 0} shows and imported ${data.summary?.episodesImported || 0} episodes`;
       toast({
@@ -1290,8 +1296,8 @@ function ImportEpisodesForm() {
             )}
           </div>
 
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={importMutation.isPending}
             className="w-full"
           >
@@ -2168,7 +2174,7 @@ function CommentsModeration() {
           <div className="space-y-4">
             {comments.map((comment: any) => {
               let contentInfo = null;
-              
+
               if (comment.episodeId) {
                 const episode = allEpisodes.find((e: Episode) => e.id === comment.episodeId);
                 if (episode) {
@@ -2211,8 +2217,8 @@ function CommentsModeration() {
                                 <span className="font-semibold">{contentInfo.title}</span>
                               </div>
                               <div className="text-sm">{contentInfo.subtitle}</div>
-                              <a 
-                                href={contentInfo.link} 
+                              <a
+                                href={contentInfo.link}
                                 className="text-xs text-primary hover:underline"
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -2555,5 +2561,147 @@ function ManageBlog() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// Newsletter Manager Component
+function NewsletterManager() {
+  const { toast } = useToast();
+  const [isSending, setIsSending] = useState(false);
+  const [sendResult, setSendResult] = useState<any>(null);
+
+  const { data: subscriberData, isLoading } = useQuery<{
+    count: number;
+    subscribers: Array<{ email: string; subscribedAt: string; source: string }>;
+  }>({
+    queryKey: ["/api/admin/newsletter/subscribers"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/newsletter/subscribers", {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to fetch subscribers");
+      return res.json();
+    },
+  });
+
+  const handleSendNewsletter = async () => {
+    if (!confirm("Are you sure you want to send the newsletter to all subscribers?")) {
+      return;
+    }
+
+    setIsSending(true);
+    setSendResult(null);
+
+    try {
+      const res = await fetch("/api/admin/newsletter/send", {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setSendResult(data);
+        toast({
+          title: "Newsletter Sent!",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to send newsletter",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send newsletter",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-6">
+      {/* Stats Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="w-5 h-5" />
+            Newsletter Management
+          </CardTitle>
+          <CardDescription>Manage subscribers and send newsletters</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="p-4 bg-muted rounded-lg text-center">
+              <p className="text-3xl font-bold text-primary">{subscriberData?.count || 0}</p>
+              <p className="text-sm text-muted-foreground">Total Subscribers</p>
+            </div>
+            <div className="p-4 bg-muted rounded-lg text-center">
+              <p className="text-3xl font-bold text-green-500">{sendResult?.sent || 0}</p>
+              <p className="text-sm text-muted-foreground">Last Send Success</p>
+            </div>
+            <div className="p-4 bg-muted rounded-lg text-center">
+              <p className="text-3xl font-bold text-red-500">{sendResult?.failed || 0}</p>
+              <p className="text-sm text-muted-foreground">Last Send Failed</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4 mb-6">
+            <Button
+              onClick={handleSendNewsletter}
+              disabled={isSending || !subscriberData?.count}
+              className="bg-primary"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              {isSending ? "Sending..." : "Send Weekly Newsletter"}
+            </Button>
+          </div>
+
+          {sendResult && (
+            <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg mb-6">
+              <h4 className="font-semibold text-green-500 mb-2">Last Newsletter Sent</h4>
+              <p className="text-sm">
+                📧 Sent to {sendResult.sent} subscribers |
+                📺 {sendResult.newShows} new shows |
+                🎬 {sendResult.newMovies} new movies
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Subscribers List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Subscribers ({subscriberData?.count || 0})</CardTitle>
+          <CardDescription>All newsletter subscribers</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <p className="text-muted-foreground">Loading subscribers...</p>
+          ) : subscriberData?.subscribers?.length === 0 ? (
+            <p className="text-muted-foreground">No subscribers yet</p>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {subscriberData?.subscribers?.map((sub, i) => (
+                <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{sub.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Subscribed: {new Date(sub.subscribedAt).toLocaleDateString()} • Source: {sub.source}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

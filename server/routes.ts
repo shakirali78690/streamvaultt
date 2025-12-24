@@ -1226,6 +1226,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send newsletter (admin only) - inline version to avoid child_process
+  app.post("/api/admin/newsletter/send", requireAdmin, async (_req, res) => {
+    try {
+      const DATA_FILE = path.join(__dirname, "..", "data", "streamvault-data.json");
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+
+      // Check for subscribers
+      if (!existsSync(SUBSCRIBERS_FILE)) {
+        return res.status(400).json({ error: "No subscribers file found" });
+      }
+
+      const subscribersData = JSON.parse(readFileSync(SUBSCRIBERS_FILE, "utf-8"));
+      const subscribers = subscribersData.subscribers || [];
+
+      if (subscribers.length === 0) {
+        return res.status(400).json({ error: "No subscribers found" });
+      }
+
+      // Load content data
+      if (!existsSync(DATA_FILE)) {
+        return res.status(400).json({ error: "No content data found" });
+      }
+
+      const contentData = JSON.parse(readFileSync(DATA_FILE, "utf-8"));
+
+      // Get new content from last 7 days
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 7);
+
+      const newShows = (contentData.shows || []).filter((show: any) => {
+        const createdAt = new Date(show.createdAt || 0);
+        return createdAt >= cutoffDate;
+      }).slice(0, 6);
+
+      const newMovies = (contentData.movies || []).filter((movie: any) => {
+        const createdAt = new Date(movie.createdAt || 0);
+        return createdAt >= cutoffDate;
+      }).slice(0, 6);
+
+      const totalNew = newShows.length + newMovies.length;
+
+      // Generate simple email HTML
+      const generateCard = (item: any, type: string) => {
+        const url = type === 'show'
+          ? `https://streamvault.live/show/${item.slug}`
+          : `https://streamvault.live/movie/${item.slug}`;
+        return `
+          <div style="display:inline-block;width:180px;margin:8px;vertical-align:top;">
+            <a href="${url}" style="text-decoration:none;">
+              <img src="${item.posterUrl}" alt="${item.title}" style="width:100%;height:240px;object-fit:cover;border-radius:8px;">
+              <h3 style="color:#fff;font-size:13px;margin:8px 0 4px 0;">${item.title}</h3>
+              <p style="color:#888;font-size:11px;margin:0;">${item.year} • ⭐ ${item.imdbRating || 'N/A'}</p>
+            </a>
+          </div>
+        `;
+      };
+
+      const emailHTML = `
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0;padding:0;background:#0a0a0a;font-family:Arial,sans-serif;">
+          <div style="max-width:600px;margin:0 auto;">
+            <div style="background:linear-gradient(135deg,#e50914 0%,#8b0000 100%);padding:30px;text-align:center;">
+              <h1 style="color:#fff;margin:0;font-size:32px;">StreamVault</h1>
+              <p style="color:rgba(255,255,255,0.9);margin:8px 0 0 0;">🎬 Weekly Entertainment Digest</p>
+            </div>
+            <div style="background:#141414;padding:20px;">
+              <h2 style="color:#fff;text-align:center;">${totalNew > 0 ? `${totalNew} Fresh Titles This Week!` : 'Your Weekly Update'}</h2>
+              ${newShows.length > 0 ? `<h3 style="color:#e50914;border-left:4px solid #e50914;padding-left:10px;">📺 New TV Shows</h3><div>${newShows.map((s: any) => generateCard(s, 'show')).join('')}</div>` : ''}
+              ${newMovies.length > 0 ? `<h3 style="color:#e50914;border-left:4px solid #e50914;padding-left:10px;">🎬 New Movies</h3><div>${newMovies.map((m: any) => generateCard(m, 'movie')).join('')}</div>` : ''}
+              <div style="text-align:center;margin:30px 0;">
+                <a href="https://streamvault.live" style="display:inline-block;background:#e50914;color:#fff;padding:15px 40px;border-radius:25px;text-decoration:none;font-weight:bold;">Explore All Content</a>
+              </div>
+            </div>
+            <div style="background:#0a0a0a;padding:20px;text-align:center;color:#666;font-size:11px;">
+              <p>© 2024 StreamVault. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const subject = totalNew > 0
+        ? `🎬 ${totalNew} New Titles on StreamVault This Week!`
+        : '📺 StreamVault Weekly Update';
+
+      // Send to all subscribers
+      let sent = 0;
+      let failed = 0;
+
+      for (const subscriber of subscribers) {
+        try {
+          if (!RESEND_API_KEY) {
+            console.log(`📧 [DRY RUN] Would send to: ${subscriber.email}`);
+            sent++;
+            continue;
+          }
+
+          const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${RESEND_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: 'StreamVault <noreply@streamvault.live>',
+              to: [subscriber.email],
+              subject: subject,
+              html: emailHTML,
+            }),
+          });
+
+          if (response.ok) {
+            sent++;
+            console.log(`✅ Newsletter sent to ${subscriber.email}`);
+          } else {
+            failed++;
+          }
+        } catch (err) {
+          failed++;
+        }
+
+        // Rate limiting
+        await new Promise(r => setTimeout(r, 100));
+      }
+
+      res.json({
+        success: true,
+        message: `Newsletter sent to ${sent} subscribers`,
+        sent,
+        failed,
+        newShows: newShows.length,
+        newMovies: newMovies.length
+      });
+    } catch (error) {
+      console.error("Newsletter send error:", error);
+      res.status(500).json({ error: "Failed to send newsletter" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
