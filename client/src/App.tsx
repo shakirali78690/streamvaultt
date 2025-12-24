@@ -10,6 +10,7 @@ import { Footer } from "@/components/footer";
 import { Chatbot } from "@/components/chatbot";
 import { AdBanner } from "@/components/ad-banner";
 import { AdBlockDetector } from "@/components/adblock-detector";
+import { InstallPrompt } from "@/components/install-prompt";
 import Home from "@/pages/home";
 import ShowDetail from "@/pages/show-detail";
 import Watch from "@/pages/watch";
@@ -83,6 +84,7 @@ function Router() {
       </div>
       <Footer />
       <Chatbot />
+      <InstallPrompt />
     </>
   );
 }
