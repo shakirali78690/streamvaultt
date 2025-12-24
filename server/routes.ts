@@ -6,8 +6,13 @@ import { watchlistSchema, viewingProgressSchema, insertBlogPostSchema } from "@s
 import type { InsertEpisode, BlogPost } from "@shared/schema";
 import { readFileSync, existsSync, writeFileSync } from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { setupSitemaps } from "./sitemap";
 import { sendContentRequestEmail, sendIssueReportEmail } from "./email-service";
+
+// ESM compatible __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Admin credentials (in production, use environment variables and hashed passwords)
 const ADMIN_USERNAME = "admin";
