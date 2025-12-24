@@ -69,7 +69,7 @@ export default function Watch() {
         lastWatched: new Date().toISOString(),
       });
     }
-    
+
     return () => {
       progressUpdated.current = false;
     };
@@ -98,7 +98,7 @@ export default function Watch() {
       };
 
       navigator.mediaSession.metadata = new MediaMetadata(metadata);
-      
+
       // Update document title
       document.title = `${episodeTitle} - ${show.title} | StreamVault`;
     }
@@ -130,7 +130,7 @@ export default function Watch() {
 
   const videoUrl = currentEpisodeData.videoUrl || currentEpisodeData.googleDriveUrl;
   const PLACEHOLDER_IDS = ['1zcFHiGEOwgq2-j6hMqpsE0ov7qcIUqCd', 'PLACEHOLDER'];
-  
+
   // Check if it's a placeholder URL or no URL at all
   const isPlaceholder = PLACEHOLDER_IDS.some(id => videoUrl?.includes(id));
   const driveId = (!videoUrl || isPlaceholder) ? null : extractDriveId(videoUrl);
@@ -142,11 +142,13 @@ export default function Watch() {
       <Helmet>
         <title>{`${episodeTitle} - ${show.title} S${currentSeason}E${currentEpisode} | StreamVault`}</title>
         <meta name="description" content={currentEpisodeData.description || show.description} />
-        <link rel="canonical" href={`https://streamvault.live/watch/${show.slug}?season=${currentSeason}&episode=${currentEpisode}`} />
+        {/* Canonical points to show detail page to avoid duplicate content */}
+        <link rel="canonical" href={`https://streamvault.live/show/${show.slug}`} />
         <meta property="og:type" content="video.episode" />
         <meta property="og:title" content={`${episodeTitle} - ${show.title}`} />
         <meta property="og:description" content={currentEpisodeData.description || show.description} />
         <meta property="og:image" content={currentEpisodeData.thumbnailUrl || show.backdropUrl} />
+        <meta property="og:url" content={`https://streamvault.live/show/${show.slug}`} />
       </Helmet>
       <div className="container mx-auto px-4 py-6">
         {/* Back Button */}
@@ -237,30 +239,30 @@ export default function Watch() {
                       window.location.replace(url);
                     }}
                   >
-                      <div className="flex gap-3">
-                        <div className="relative w-32 aspect-video flex-shrink-0">
-                          <img
-                            src={episode.thumbnailUrl}
-                            alt={episode.title}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Play className="w-6 h-6 text-primary fill-current" />
-                          </div>
-                        </div>
-                        <div className="flex-1 py-2 pr-3 min-w-0">
-                          <p className="text-xs text-muted-foreground mb-1">
-                            S{episode.season} E{episode.episodeNumber}
-                          </p>
-                          <h4 className="text-sm font-medium line-clamp-2">
-                            {episode.title}
-                          </h4>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {episode.duration} min
-                          </p>
+                    <div className="flex gap-3">
+                      <div className="relative w-32 aspect-video flex-shrink-0">
+                        <img
+                          src={episode.thumbnailUrl}
+                          alt={episode.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Play className="w-6 h-6 text-primary fill-current" />
                         </div>
                       </div>
-                    </Card>
+                      <div className="flex-1 py-2 pr-3 min-w-0">
+                        <p className="text-xs text-muted-foreground mb-1">
+                          S{episode.season} E{episode.episodeNumber}
+                        </p>
+                        <h4 className="text-sm font-medium line-clamp-2">
+                          {episode.title}
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {episode.duration} min
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
                 ))
               ) : (
                 <p className="text-sm text-muted-foreground">

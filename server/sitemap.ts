@@ -1,15 +1,91 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import type { IStorage } from "./storage";
 import type { Show, Category } from "@shared/schema";
 
-export function setupSitemaps(app: Express, storage: IStorage) {
-  const baseUrl = process.env.BASE_URL || "https://streamvault.live";
+// Get base URL from request host
+function getBaseUrl(req: Request): string {
+  const host = req.get('host') || 'streamvault.live';
+  const protocol = req.protocol || 'https';
 
-  // Single comprehensive sitemap with all pages
-  app.get("/sitemap.xml", async (_req, res) => {
+  // Handle known domains
+  if (host.includes('streamvault.in')) {
+    return 'https://streamvault.in';
+  }
+  return 'https://streamvault.live';
+}
+
+export function setupSitemaps(app: Express, storage: IStorage) {
+  // Dynamic robots.txt based on domain
+  app.get("/robots.txt", (req, res) => {
+    const baseUrl = getBaseUrl(req);
+
+    const robotsTxt = `# StreamVault - Free Streaming Platform
+# ${baseUrl}
+
+User-agent: *
+
+# Main Pages
+Allow: /
+Allow: /series
+Allow: /movies
+Allow: /trending
+Allow: /search
+Allow: /browse
+Allow: /browse/shows
+Allow: /browse/movies
+Allow: /watchlist
+Allow: /continue-watching
+Allow: /sitemap
+
+# Content Detail Pages (main canonical pages)
+Allow: /show/*
+Allow: /movie/*
+Allow: /category/*
+
+# Blog & Articles (SEO content)
+Allow: /blog
+Allow: /blog/*
+
+# User Features
+Allow: /request
+Allow: /report
+
+# Info Pages
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /dmca
+Allow: /help
+Allow: /faq
+
+# Block watch pages (thin content, use canonical to detail pages)
+Disallow: /watch/*
+Disallow: /watch-movie/*
+
+# Block admin and API endpoints
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /api/
+Disallow: /api/*
+
+# Sitemap
+Sitemap: ${baseUrl}/sitemap.xml
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+`;
+
+    res.header("Content-Type", "text/plain");
+    res.send(robotsTxt);
+  });
+
+  // Single comprehensive sitemap with all pages - DOMAIN AWARE
+  app.get("/sitemap.xml", async (req, res) => {
     try {
+      const baseUrl = getBaseUrl(req);
       const lastmod = new Date().toISOString().split("T")[0];
-      
+
       // Static pages - all public routes
       const staticPages = [
         // Main pages
@@ -64,7 +140,7 @@ export function setupSitemaps(app: Express, storage: IStorage) {
   </url>`);
       });
 
-      // Add shows with images
+      // Add shows (ONLY detail pages, NOT watch pages)
       const shows = await storage.getAllShows();
       for (const show of shows) {
         const title = (show.title || "")
@@ -84,6 +160,7 @@ export function setupSitemaps(app: Express, storage: IStorage) {
         const posterUrl = (show.posterUrl || "").replace(/&/g, "&amp;");
         const backdropUrl = (show.backdropUrl || "").replace(/&/g, "&amp;");
 
+        // Show detail page (canonical page)
         let showUrl = `
   <url>
     <loc>${baseUrl}/show/${show.slug}</loc>
@@ -91,7 +168,6 @@ export function setupSitemaps(app: Express, storage: IStorage) {
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>`;
 
-        // Only add images if URLs exist and are valid
         if (posterUrl && posterUrl.startsWith('http')) {
           showUrl += `
     <image:image>
@@ -112,7 +188,7 @@ export function setupSitemaps(app: Express, storage: IStorage) {
   </url>`;
         allUrls.push(showUrl);
 
-        // Add blog article page for this show
+        // Blog article page for show
         let blogShowUrl = `
   <url>
     <loc>${baseUrl}/blog/show/${show.slug}</loc>
@@ -132,47 +208,11 @@ export function setupSitemaps(app: Express, storage: IStorage) {
   </url>`;
         allUrls.push(blogShowUrl);
 
-        // Add episodes for this show
-        try {
-          const episodes = await storage.getEpisodesByShowId(show.id);
-          
-          episodes.forEach((episode) => {
-            const episodeTitle = `${show.title || ""} - S${episode.season}E${episode.episodeNumber}`;
-            const escapedTitle = episodeTitle
-              .replace(/&/g, "&amp;")
-              .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;")
-              .replace(/"/g, "&quot;")
-              .replace(/'/g, "&apos;");
-
-            const thumbnailUrl = (episode.thumbnailUrl || "").replace(/&/g, "&amp;");
-
-            let episodeUrl = `
-  <url>
-    <loc>${baseUrl}/watch/${show.slug}?season=${episode.season}&amp;episode=${episode.episodeNumber}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>`;
-
-            // Only add image if thumbnail URL exists and is valid
-            if (thumbnailUrl && thumbnailUrl.startsWith('http')) {
-              episodeUrl += `
-    <image:image>
-      <image:loc>${thumbnailUrl}</image:loc>
-      <image:title>${escapedTitle}</image:title>
-    </image:image>`;
-            }
-
-            episodeUrl += `
-  </url>`;
-            allUrls.push(episodeUrl);
-          });
-        } catch (err) {
-          console.error(`Error getting episodes for show ${show.id}:`, err);
-        }
+        // NOTE: Removed episode watch URLs to fix duplicate content issues
+        // Watch pages now have canonical tags pointing to show detail pages
       }
 
-      // Add movies with images
+      // Add movies (detail pages and blog, NOT watch-movie pages in robots)
       const movies = await storage.getAllMovies();
       for (const movie of movies) {
         const title = (movie.title || "")
@@ -192,6 +232,7 @@ export function setupSitemaps(app: Express, storage: IStorage) {
         const posterUrl = (movie.posterUrl || "").replace(/&/g, "&amp;");
         const backdropUrl = (movie.backdropUrl || "").replace(/&/g, "&amp;");
 
+        // Movie detail page (canonical)
         let movieUrl = `
   <url>
     <loc>${baseUrl}/movie/${movie.slug}</loc>
@@ -199,7 +240,6 @@ export function setupSitemaps(app: Express, storage: IStorage) {
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>`;
 
-        // Only add images if URLs exist and are valid
         if (posterUrl && posterUrl.startsWith('http')) {
           movieUrl += `
     <image:image>
@@ -220,7 +260,7 @@ export function setupSitemaps(app: Express, storage: IStorage) {
   </url>`;
         allUrls.push(movieUrl);
 
-        // Add blog article page for this movie
+        // Blog article page for movie
         let blogMovieUrl = `
   <url>
     <loc>${baseUrl}/blog/movie/${movie.slug}</loc>
@@ -240,26 +280,8 @@ export function setupSitemaps(app: Express, storage: IStorage) {
   </url>`;
         allUrls.push(blogMovieUrl);
 
-        // Add watch-movie page
-        let watchMovieUrl = `
-  <url>
-    <loc>${baseUrl}/watch-movie/${movie.slug}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>`;
-
-        // Only add image if poster URL exists and is valid
-        if (posterUrl && posterUrl.startsWith('http')) {
-          watchMovieUrl += `
-    <image:image>
-      <image:loc>${posterUrl}</image:loc>
-      <image:title>Watch ${title} Online Free</image:title>
-    </image:image>`;
-        }
-
-        watchMovieUrl += `
-  </url>`;
-        allUrls.push(watchMovieUrl);
+        // NOTE: Removed watch-movie URLs - robots.txt disallows them
+        // Watch pages have canonical tags pointing to movie detail pages
       }
 
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -275,5 +297,6 @@ export function setupSitemaps(app: Express, storage: IStorage) {
     }
   });
 
-  console.log("✅ Single comprehensive sitemap configured with all pages");
+  console.log("✅ Dynamic sitemap and robots.txt configured for both domains");
 }
+

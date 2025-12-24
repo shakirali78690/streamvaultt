@@ -44,7 +44,7 @@ export default function WatchMovie() {
       };
 
       navigator.mediaSession.metadata = new MediaMetadata(metadata);
-      
+
       // Update document title
       document.title = `${movie.title} (${movie.year}) | StreamVault`;
     }
@@ -71,7 +71,7 @@ export default function WatchMovie() {
   };
 
   const PLACEHOLDER_IDS = ['1zcFHiGEOwgq2-j6hMqpsE0ov7qcIUqCd', 'PLACEHOLDER'];
-  
+
   // Check if it's a placeholder URL or no URL at all
   const isPlaceholder = PLACEHOLDER_IDS.some(id => movie.googleDriveUrl?.includes(id));
   const driveId = (!movie.googleDriveUrl || isPlaceholder) ? null : extractDriveId(movie.googleDriveUrl);
@@ -80,13 +80,13 @@ export default function WatchMovie() {
   const recommendedMovies = allMovies
     ?.filter((m) => {
       if (m.id === movie.id) return false;
-      
+
       // Match by genre or category
       const movieGenres = movie.genres?.toLowerCase().split(',').map(g => g.trim()) || [];
       const otherGenres = m.genres?.toLowerCase().split(',').map(g => g.trim()) || [];
       const hasMatchingGenre = movieGenres.some(genre => otherGenres.includes(genre));
       const hasMatchingCategory = m.category === movie.category;
-      
+
       return hasMatchingGenre || hasMatchingCategory;
     })
     .slice(0, 8) || [];
@@ -96,11 +96,13 @@ export default function WatchMovie() {
       <Helmet>
         <title>{`Watch ${movie.title} (${movie.year}) Free | StreamVault`}</title>
         <meta name="description" content={movie.description} />
-        <link rel="canonical" href={`https://streamvault.live/watch-movie/${movie.slug}`} />
+        {/* Canonical points to movie detail page to avoid duplicate content */}
+        <link rel="canonical" href={`https://streamvault.live/movie/${movie.slug}`} />
         <meta property="og:type" content="video.movie" />
         <meta property="og:title" content={`Watch ${movie.title} Free`} />
         <meta property="og:description" content={movie.description} />
         <meta property="og:image" content={movie.backdropUrl} />
+        <meta property="og:url" content={`https://streamvault.live/movie/${movie.slug}`} />
       </Helmet>
       <div className="container mx-auto px-4 py-6">
         {/* Back Button */}

@@ -1,13 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
-import { Play, Plus, Check, Star, Share2, ChevronLeft } from "lucide-react";
+import { Play, Plus, Check, Star, Share2, ChevronLeft, Globe, ExternalLink, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Show, Episode } from "@shared/schema";
+import type { Show, Episode, BlogPost } from "@shared/schema";
 import { useState, useEffect } from "react";
 import { ContentRow } from "@/components/content-row";
 import { apiRequest } from "@/lib/queryClient";
@@ -19,13 +19,13 @@ const getEpisodeThumbnail = (episode: Episode, showBackdrop?: string) => {
   if (episode.thumbnailUrl && episode.thumbnailUrl !== showBackdrop) {
     return episode.thumbnailUrl;
   }
-  
+
   // Priority 2: Auto-generate from Google Drive video
   const driveIdMatch = episode.googleDriveUrl?.match(/\/d\/([^/]+)/);
   if (driveIdMatch && driveIdMatch[1] !== 'PLACEHOLDER_VIDEO_ID') {
     return `https://drive.google.com/thumbnail?id=${driveIdMatch[1]}&sz=w1000`;
   }
-  
+
   // Priority 3: Fallback to episode's thumbnail or show backdrop
   return episode.thumbnailUrl;
 };
@@ -56,6 +56,44 @@ export default function ShowDetail() {
   const { data: watchlist = [] } = useQuery<any[]>({
     queryKey: ["/api/watchlist"],
   });
+
+  // Fetch blog posts to get production companies and external links
+  const { data: blogPosts = [] } = useQuery<BlogPost[]>({
+    queryKey: ["/api/blog"],
+  });
+
+  // Find matching blog post for this show
+  const blogPost = show ? blogPosts.find(
+    (post) => post.contentId === show.id || post.slug === show.slug
+  ) : null;
+
+  // Parse production companies and external links
+  interface ProductionCompany {
+    name: string;
+    logoUrl: string | null;
+    website: string | null;
+    country: string | null;
+  }
+  let productionCompanies: ProductionCompany[] = [];
+  if ((blogPost as any)?.productionCompanies) {
+    try {
+      productionCompanies = JSON.parse((blogPost as any).productionCompanies);
+    } catch { }
+  }
+
+  interface ExternalLinks {
+    homepage: string | null;
+    imdb: string | null;
+    facebook: string | null;
+    twitter: string | null;
+    instagram: string | null;
+  }
+  let externalLinks: ExternalLinks = { homepage: null, imdb: null, facebook: null, twitter: null, instagram: null };
+  if ((blogPost as any)?.externalLinks) {
+    try {
+      externalLinks = JSON.parse((blogPost as any).externalLinks);
+    } catch { }
+  }
 
   const isInWatchlist = show ? watchlist.some((item) => item.showId === show.id) : false;
 
@@ -199,20 +237,20 @@ export default function ShowDetail() {
         <title>{`${show.title} - Watch Online Free | StreamVault`}</title>
         <meta name="description" content={show.description} />
         <link rel="canonical" href={`https://streamvault.live/show/${show.slug}`} />
-        
+
         {/* Open Graph */}
         <meta property="og:type" content="video.tv_show" />
         <meta property="og:title" content={`${show.title} - Watch Online Free | StreamVault`} />
         <meta property="og:description" content={show.description} />
         <meta property="og:image" content={show.backdropUrl} />
         <meta property="og:url" content={`https://streamvault.live/show/${show.slug}`} />
-        
+
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${show.title} - Watch Online Free`} />
         <meta name="twitter:description" content={show.description} />
         <meta name="twitter:image" content={show.backdropUrl} />
-        
+
         {/* Structured Data */}
         <script type="application/ld+json">
           {JSON.stringify(structuredData)}
@@ -413,7 +451,7 @@ export default function ShowDetail() {
                             <Play className="w-8 md:w-12 h-8 md:h-12 text-primary fill-current" />
                           </div>
                         </div>
-                        
+
                         {/* Episode Info */}
                         <div className="flex-1 py-3 md:py-4 pr-3 md:pr-4">
                           <h3
@@ -518,6 +556,115 @@ export default function ShowDetail() {
                   </div>
                 </div>
               </div>
+
+              {/* Production Companies */}
+              {productionCompanies.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Building2 className="w-5 h-5" />
+                    Production Companies
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {productionCompanies.map((company, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col items-center text-center p-4 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        {company.logoUrl ? (
+                          <img
+                            src={company.logoUrl}
+                            alt={company.name}
+                            className="h-12 w-auto object-contain mb-3 filter brightness-110"
+                          />
+                        ) : (
+                          <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+                            <Building2 className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        <p className="font-medium text-sm">{company.name}</p>
+                        {company.country && (
+                          <p className="text-xs text-muted-foreground">{company.country}</p>
+                        )}
+                        {company.website && (
+                          <a
+                            href={company.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            Official Website
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* External Links */}
+              {(externalLinks.imdb || externalLinks.homepage || externalLinks.facebook || externalLinks.twitter || externalLinks.instagram) && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <ExternalLink className="w-5 h-5" />
+                    Official Links
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {externalLinks.homepage && (
+                      <a
+                        href={externalLinks.homepage}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                      >
+                        <Globe className="w-4 h-4" />
+                        Official Website
+                      </a>
+                    )}
+                    {externalLinks.imdb && (
+                      <a
+                        href={externalLinks.imdb}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors font-medium"
+                      >
+                        <Star className="w-4 h-4" />
+                        IMDb
+                      </a>
+                    )}
+                    {externalLinks.facebook && (
+                      <a
+                        href={externalLinks.facebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
+                      >
+                        Facebook
+                      </a>
+                    )}
+                    {externalLinks.twitter && (
+                      <a
+                        href={externalLinks.twitter}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                      >
+                        X (Twitter)
+                      </a>
+                    )}
+                    {externalLinks.instagram && (
+                      <a
+                        href={externalLinks.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white rounded-lg hover:opacity-90 transition-opacity"
+                      >
+                        Instagram
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </TabsContent>
 

@@ -51,7 +51,7 @@ function httpsGet(url, retries = 3) {
           }
         });
       });
-      
+
       req.on('error', (err) => {
         if (attempt < retries) {
           console.log(`   ⚠️ Connection error, retrying (${attempt + 1}/${retries})...`);
@@ -60,7 +60,7 @@ function httpsGet(url, retries = 3) {
           reject(err);
         }
       });
-      
+
       req.on('timeout', () => {
         req.destroy();
         if (attempt < retries) {
@@ -71,7 +71,7 @@ function httpsGet(url, retries = 3) {
         }
       });
     };
-    
+
     makeRequest(1);
   });
 }
@@ -88,7 +88,7 @@ function generateSlug(title) {
 }
 
 function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
@@ -121,7 +121,7 @@ function mapCategory(genres) {
     'Animation': 'animation',
     'Documentary': 'documentary'
   };
-  
+
   for (const genre of genres || []) {
     if (genreMap[genre.name]) {
       return genreMap[genre.name];
@@ -132,39 +132,39 @@ function mapCategory(genres) {
 
 async function fetchShowData(showId) {
   console.log(`\n📥 Fetching show data from TMDB (ID: ${showId})...`);
-  
+
   // Fetch sequentially to avoid connection issues
   console.log('   Fetching show details...');
   const show = await httpsGet(`${TMDB_BASE_URL}/tv/${showId}?api_key=${TMDB_API_KEY}&language=en-US`);
-  
+
   if (show.success === false) {
     throw new Error(`Show not found: ${show.status_message}`);
   }
-  
+
   await delay(300);
   console.log('   Fetching credits...');
   const credits = await httpsGet(`${TMDB_BASE_URL}/tv/${showId}/credits?api_key=${TMDB_API_KEY}`);
-  
+
   await delay(300);
   console.log('   Fetching ratings...');
   const ratings = await httpsGet(`${TMDB_BASE_URL}/tv/${showId}/content_ratings?api_key=${TMDB_API_KEY}`);
-  
+
   await delay(300);
   console.log('   Fetching reviews...');
   const reviews = await httpsGet(`${TMDB_BASE_URL}/tv/${showId}/reviews?api_key=${TMDB_API_KEY}&language=en-US`);
-  
+
   await delay(300);
   console.log('   Fetching keywords...');
   const keywords = await httpsGet(`${TMDB_BASE_URL}/tv/${showId}/keywords?api_key=${TMDB_API_KEY}`);
-  
+
   await delay(300);
   console.log('   Fetching external IDs...');
   const externalIds = await httpsGet(`${TMDB_BASE_URL}/tv/${showId}/external_ids?api_key=${TMDB_API_KEY}`);
-  
+
   await delay(300);
   console.log('   Fetching videos (trailers)...');
   const videos = await httpsGet(`${TMDB_BASE_URL}/tv/${showId}/videos?api_key=${TMDB_API_KEY}&language=en-US`);
-  
+
   return { show, credits, ratings, reviews, keywords, externalIds, videos };
 }
 
@@ -178,10 +178,34 @@ async function fetchSeasonVideos(showId, seasonNumber) {
   return await httpsGet(videosUrl);
 }
 
+async function fetchProductionCompanyDetails(companies) {
+  const enrichedCompanies = [];
+  for (const company of companies.slice(0, 5)) {
+    try {
+      await delay(100);
+      const companyData = await httpsGet(`${TMDB_BASE_URL}/company/${company.id}?api_key=${TMDB_API_KEY}`);
+      enrichedCompanies.push({
+        name: companyData.name || company.name,
+        logoUrl: companyData.logo_path ? `https://image.tmdb.org/t/p/w200${companyData.logo_path}` : null,
+        website: companyData.homepage || null,
+        country: companyData.origin_country || company.origin_country || null
+      });
+    } catch (err) {
+      enrichedCompanies.push({
+        name: company.name,
+        logoUrl: company.logo_path ? `https://image.tmdb.org/t/p/w200${company.logo_path}` : null,
+        website: null,
+        country: company.origin_country || null
+      });
+    }
+  }
+  return enrichedCompanies;
+}
+
 async function main() {
   console.log('📺 StreamVault Show Adder');
   console.log('=========================\n');
-  
+
   if (!TMDB_API_KEY) {
     console.log('❌ Error: TMDB_API_KEY not found in .env file');
     console.log('   Make sure your .env file contains: TMDB_API_KEY=your_key_here');
@@ -189,47 +213,47 @@ async function main() {
     rl.close();
     return;
   }
-  
+
   try {
     // Get TMDB Show ID
     const showId = await question('Enter TMDB TV Show ID: ');
-    
+
     if (!showId || isNaN(showId)) {
       console.log('❌ Invalid show ID');
       rl.close();
       return;
     }
-    
+
     // Fetch show data
     const { show, credits, ratings, reviews, keywords, externalIds, videos } = await fetchShowData(showId);
-    
+
     console.log(`\n✅ Found: ${show.name} (${show.first_air_date?.split('-')[0] || 'N/A'})`);
     console.log(`   Seasons: ${show.number_of_seasons}`);
     console.log(`   Episodes: ${show.number_of_episodes}`);
     console.log(`   Overview: ${show.overview?.substring(0, 100)}...`);
-    
+
     // Ask which seasons to add
     const seasonsInput = await question(`\nWhich seasons to add? (1-${show.number_of_seasons}, comma-separated, or 'all'): `);
-    
+
     let seasonsToAdd = [];
     if (seasonsInput.toLowerCase() === 'all') {
       seasonsToAdd = Array.from({ length: show.number_of_seasons }, (_, i) => i + 1);
     } else {
       seasonsToAdd = seasonsInput.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0 && n <= show.number_of_seasons);
     }
-    
+
     if (seasonsToAdd.length === 0) {
       console.log('❌ No valid seasons selected');
       rl.close();
       return;
     }
-    
+
     console.log(`\n📋 Will add seasons: ${seasonsToAdd.join(', ')}`);
-    
+
     // Ask for featured/trending
     const featured = (await question('\nFeatured on homepage? (y/n): ')).toLowerCase() === 'y';
     const trending = (await question('Show in trending? (y/n): ')).toLowerCase() === 'y';
-    
+
     // Build cast details - top 10 cast members
     const topCast = credits.cast?.slice(0, 10) || [];
     const castNames = topCast.map(c => c.name).join(', ');
@@ -238,13 +262,13 @@ async function main() {
       character: c.character,
       profileUrl: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null
     }));
-    
+
     // Get creators
     const creators = show.created_by?.map(c => c.name).join(', ') || '';
-    
+
     // Generate show ID
     const newShowId = generateUUID();
-    
+
     // Build show object
     const newShow = {
       id: newShowId,
@@ -266,17 +290,17 @@ async function main() {
       category: mapCategory(show.genres),
       castDetails: JSON.stringify(castDetails)
     };
-    
+
     // Collect episodes and season details for each season
     const episodes = [];
     const seasonDetailsList = [];
-    
+
     for (const seasonNum of seasonsToAdd) {
       console.log(`\n📺 Season ${seasonNum}`);
       console.log('─'.repeat(40));
-      
+
       const seasonData = await fetchSeasonData(showId, seasonNum);
-      
+
       // Fetch season-specific videos/trailers
       let seasonVideos = { results: [] };
       try {
@@ -285,9 +309,9 @@ async function main() {
       } catch (err) {
         // Ignore errors fetching season videos
       }
-      
+
       const seasonTrailer = seasonVideos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
-      
+
       // Add season details
       seasonDetailsList.push({
         seasonNumber: seasonNum,
@@ -299,23 +323,23 @@ async function main() {
         trailerKey: seasonTrailer?.key || null,
         trailerName: seasonTrailer?.name || null
       });
-      
+
       if (!seasonData.episodes || seasonData.episodes.length === 0) {
         console.log(`   No episodes found for season ${seasonNum}`);
         continue;
       }
-      
+
       console.log(`   Found ${seasonData.episodes.length} episodes\n`);
-      
+
       // Ask for episode links
       console.log('   Enter Google Drive URLs for each episode (or press Enter to skip):');
-      
+
       for (const ep of seasonData.episodes) {
         const epNum = ep.episode_number;
         const epTitle = ep.name || `Episode ${epNum}`;
-        
+
         const driveUrl = await question(`   S${seasonNum}E${epNum} - ${epTitle}: `);
-        
+
         if (driveUrl && driveUrl.trim()) {
           episodes.push({
             id: generateUUID(),
@@ -333,15 +357,15 @@ async function main() {
         }
       }
     }
-    
+
     if (episodes.length === 0) {
       console.log('\n⚠️  No episodes added. Show will be added without episodes.');
     }
-    
+
     // Load existing data
     console.log('\n📂 Loading existing data...');
     const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-    
+
     // Check if show already exists
     const existingShow = data.shows.find(s => s.slug === newShow.slug);
     if (existingShow) {
@@ -360,11 +384,11 @@ async function main() {
         return !seasonsToAdd.includes(e.season);
       });
     }
-    
+
     // Add show and episodes
     data.shows.push(newShow);
     data.episodes.push(...episodes);
-    
+
     // Generate detailed blog post with REAL data from TMDB
     const genre1 = newShow.genres?.split(',')[0]?.trim() || 'Drama';
     const genre2 = newShow.genres?.split(',')[1]?.trim() || '';
@@ -373,7 +397,7 @@ async function main() {
     const lead2 = castList[1] || 'the supporting cast';
     const creator = newShow.creators?.split(',')[0]?.trim() || 'the showrunner';
     const seasonText = newShow.totalSeasons > 1 ? `${newShow.totalSeasons} seasons` : '1 season';
-    
+
     // Get real data from TMDB
     const productionCompanies = show.production_companies?.map(c => c.name).slice(0, 3).join(', ') || 'Various studios';
     const productionCountries = show.production_countries?.map(c => c.name).join(', ') || show.origin_country?.join(', ') || 'USA';
@@ -385,25 +409,25 @@ async function main() {
     const status = show.status || 'Ongoing';
     const firstAirDate = show.first_air_date || '';
     const lastAirDate = show.last_air_date || '';
-    
+
     // Get real reviews from TMDB - show FULL content, no truncation
     const realReviews = reviews?.results?.slice(0, 3) || [];
     const reviewExcerpts = realReviews.map(r => {
       const content = r.content.replace(/\r\n/g, '\n').trim();
       return `**${r.author}** writes:\n\n"${content}"`;
     }).join('\n\n---\n\n');
-    
+
     // Get keywords
     const keywordList = keywords?.results?.slice(0, 10).map(k => k.name) || [];
-    
+
     // Get trailer
     const trailer = videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
     const trailerUrl = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
-    
+
     // Get executive producers and other crew
     const execProducers = credits.crew?.filter(c => c.job === 'Executive Producer').slice(0, 3).map(w => w.name).join(', ') || '';
     const composers = credits.crew?.filter(c => c.job === 'Original Music Composer' || c.job === 'Music' || c.job === 'Composer').slice(0, 2).map(c => c.name).join(', ') || '';
-    
+
     const blogPost = {
       id: `blog-${newShow.slug}-${Date.now()}`,
       title: newShow.title,
@@ -432,22 +456,42 @@ async function main() {
       awards: `${newShow.title} has received recognition for its quality:\n\n• TMDB Rating: ${newShow.imdbRating}/10 (${voteCount.toLocaleString()} votes)\n• Popularity Score: ${popularity}\n• Status: ${status}\n• Network: ${networks}\n${parseFloat(newShow.imdbRating) >= 7.5 ? '• Critically acclaimed with high audience ratings\n' : '• Positive reception from audiences\n'}• ${lead1} received praise for their performance\n• ${creator !== 'the showrunner' ? `${creator} recognized for creating the series` : 'Creative team recognized for strong showrunning'}\n${composers ? `• ${composers} recognized for the musical score\n` : ''}• Produced by ${productionCompanies}`,
       keywords: JSON.stringify(keywordList),
       seasonDetails: JSON.stringify(seasonDetailsList),
+      // NEW: Production companies with logos and websites for backlinks
+      productionCompanies: null, // Will be set below
+      // NEW: External links for social media backlinks
+      externalLinks: null, // Will be set below
       author: 'StreamVault Editorial',
       published: true,
       featured: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
+    // Fetch enriched production companies with logos and websites
+    console.log('   Fetching production company details for SEO backlinks...');
+    const enrichedProductionCompanies = await fetchProductionCompanyDetails(show.production_companies || []);
+    blogPost.productionCompanies = JSON.stringify(enrichedProductionCompanies);
+
+    // Build external links for social media backlinks
+    const externalLinksData = {
+      imdb: externalIds.imdb_id ? `https://www.imdb.com/title/${externalIds.imdb_id}` : null,
+      facebook: externalIds.facebook_id ? `https://www.facebook.com/${externalIds.facebook_id}` : null,
+      twitter: externalIds.twitter_id ? `https://twitter.com/${externalIds.twitter_id}` : null,
+      instagram: externalIds.instagram_id ? `https://www.instagram.com/${externalIds.instagram_id}` : null,
+      homepage: show.homepage || null
+    };
+    blogPost.externalLinks = JSON.stringify(externalLinksData);
+    console.log('   ✅ Production companies and external links added!');
+
     if (!data.blogPosts) data.blogPosts = [];
     // Remove existing blog post for this show if any
     data.blogPosts = data.blogPosts.filter(b => b.contentId !== newShow.id && !b.slug.includes(newShow.slug));
     data.blogPosts.push(blogPost);
-    
+
     // Save data
     console.log('\n💾 Saving data...');
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    
+
     console.log('\n✅ Show added successfully!');
     console.log(`   Title: ${newShow.title}`);
     console.log(`   Slug: ${newShow.slug}`);
@@ -457,11 +501,11 @@ async function main() {
     console.log(`   Category: ${newShow.category}`);
     console.log(`   Episodes added: ${episodes.length}`);
     console.log(`   Blog post: Created`);
-    
+
   } catch (error) {
     console.error('\n❌ Error:', error.message);
   }
-  
+
   rl.close();
 }
 

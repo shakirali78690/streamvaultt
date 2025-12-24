@@ -129,6 +129,9 @@ export const blogPosts = pgTable("blog_posts", {
   awards: text("awards"), // Awards info
   keywords: text("keywords"), // TMDB keywords (JSON array string)
   seasonDetails: text("season_details"), // Season info for shows (JSON array string)
+  // NEW: Production company & external links for SEO backlinks
+  productionCompanies: text("production_companies"), // JSON: [{name, logoUrl, website}]
+  externalLinks: text("external_links"), // JSON: {imdb, facebook, twitter, instagram, homepage}
   author: text("author").default("StreamVault"),
   published: boolean("published").default(false),
   featured: boolean("featured").default(false),

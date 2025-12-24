@@ -1,13 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { Helmet } from "react-helmet-async";
-import { Play, Clock, Calendar, Star, Plus, Check, Share2, ChevronLeft } from "lucide-react";
+import { Play, Clock, Calendar, Star, Plus, Check, Share2, ChevronLeft, Globe, ExternalLink, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Movie } from "@shared/schema";
+import type { Movie, BlogPost } from "@shared/schema";
 
 export default function MovieDetail() {
   const [, params] = useRoute("/movie/:slug");
@@ -23,6 +23,44 @@ export default function MovieDetail() {
   const { data: watchlist = [] } = useQuery<any[]>({
     queryKey: ["/api/watchlist"],
   });
+
+  // Fetch blog posts to get production companies and external links
+  const { data: blogPosts = [] } = useQuery<BlogPost[]>({
+    queryKey: ["/api/blog"],
+  });
+
+  // Find matching blog post for this movie
+  const blogPost = movie ? blogPosts.find(
+    (post) => post.contentId === movie.id || post.slug === movie.slug
+  ) : null;
+
+  // Parse production companies and external links
+  interface ProductionCompany {
+    name: string;
+    logoUrl: string | null;
+    website: string | null;
+    country: string | null;
+  }
+  let productionCompanies: ProductionCompany[] = [];
+  if ((blogPost as any)?.productionCompanies) {
+    try {
+      productionCompanies = JSON.parse((blogPost as any).productionCompanies);
+    } catch { }
+  }
+
+  interface ExternalLinks {
+    homepage: string | null;
+    imdb: string | null;
+    facebook: string | null;
+    twitter: string | null;
+    instagram: string | null;
+  }
+  let externalLinks: ExternalLinks = { homepage: null, imdb: null, facebook: null, twitter: null, instagram: null };
+  if ((blogPost as any)?.externalLinks) {
+    try {
+      externalLinks = JSON.parse((blogPost as any).externalLinks);
+    } catch { }
+  }
 
   const isInWatchlist = movie ? watchlist.some((item) => item.movieId === movie.id) : false;
 
@@ -171,20 +209,20 @@ export default function MovieDetail() {
         <title>{`${movie.title} (${movie.year}) - Watch Free | StreamVault`}</title>
         <meta name="description" content={movie.description} />
         <link rel="canonical" href={`https://streamvault.live/movie/${movie.slug}`} />
-        
+
         {/* Open Graph */}
         <meta property="og:type" content="video.movie" />
         <meta property="og:title" content={`${movie.title} - Watch Free | StreamVault`} />
         <meta property="og:description" content={movie.description} />
         <meta property="og:image" content={movie.backdropUrl} />
         <meta property="og:url" content={`https://streamvault.live/movie/${movie.slug}`} />
-        
+
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${movie.title} - Watch Free`} />
         <meta name="twitter:description" content={movie.description} />
         <meta name="twitter:image" content={movie.backdropUrl} />
-        
+
         {/* Structured Data */}
         <script type="application/ld+json">
           {JSON.stringify(structuredData)}
@@ -390,6 +428,115 @@ export default function MovieDetail() {
               </div>
             </div>
           </div>
+
+          {/* Production Companies */}
+          {productionCompanies.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <Building2 className="w-6 h-6" />
+                Production Companies
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {productionCompanies.map((company, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col items-center text-center p-4 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    {company.logoUrl ? (
+                      <img
+                        src={company.logoUrl}
+                        alt={company.name}
+                        className="h-12 w-auto object-contain mb-3 filter brightness-110"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+                        <Building2 className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <p className="font-medium text-sm">{company.name}</p>
+                    {company.country && (
+                      <p className="text-xs text-muted-foreground">{company.country}</p>
+                    )}
+                    {company.website && (
+                      <a
+                        href={company.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Official Website
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* External Links */}
+          {(externalLinks.imdb || externalLinks.homepage || externalLinks.facebook || externalLinks.twitter || externalLinks.instagram) && (
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <ExternalLink className="w-6 h-6" />
+                Official Links
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {externalLinks.homepage && (
+                  <a
+                    href={externalLinks.homepage}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    <Globe className="w-4 h-4" />
+                    Official Website
+                  </a>
+                )}
+                {externalLinks.imdb && (
+                  <a
+                    href={externalLinks.imdb}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors font-medium"
+                  >
+                    <Star className="w-4 h-4" />
+                    IMDb
+                  </a>
+                )}
+                {externalLinks.facebook && (
+                  <a
+                    href={externalLinks.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
+                  >
+                    Facebook
+                  </a>
+                )}
+                {externalLinks.twitter && (
+                  <a
+                    href={externalLinks.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    X (Twitter)
+                  </a>
+                )}
+                {externalLinks.instagram && (
+                  <a
+                    href={externalLinks.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    Instagram
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

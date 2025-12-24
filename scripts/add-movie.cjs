@@ -54,7 +54,7 @@ function generateSlug(title) {
 }
 
 function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
@@ -86,7 +86,7 @@ function mapCategory(genres) {
     'Animation': 'animation',
     'Documentary': 'documentary'
   };
-  
+
   for (const genre of genres || []) {
     if (genreMap[genre.name]) {
       return genreMap[genre.name];
@@ -99,48 +99,72 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function fetchProductionCompanyDetails(companies, apiKey) {
+  const enrichedCompanies = [];
+  for (const company of companies.slice(0, 5)) {
+    try {
+      await delay(100);
+      const res = await httpsGet(`${TMDB_BASE_URL}/company/${company.id}?api_key=${apiKey}`);
+      enrichedCompanies.push({
+        name: res.name || company.name,
+        logoUrl: res.logo_path ? `https://image.tmdb.org/t/p/w200${res.logo_path}` : null,
+        website: res.homepage || null,
+        country: res.origin_country || company.origin_country || null
+      });
+    } catch (err) {
+      enrichedCompanies.push({
+        name: company.name,
+        logoUrl: company.logo_path ? `https://image.tmdb.org/t/p/w200${company.logo_path}` : null,
+        website: null,
+        country: company.origin_country || null
+      });
+    }
+  }
+  return enrichedCompanies;
+}
+
 async function fetchMovieData(movieId) {
   console.log(`\n📥 Fetching movie data from TMDB (ID: ${movieId})...`);
-  
+
   // Fetch basic movie data
   console.log('   Fetching movie details...');
   const movie = await httpsGet(`${TMDB_BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=en-US`);
-  
+
   if (movie.success === false) {
     throw new Error(`Movie not found: ${movie.status_message}`);
   }
-  
+
   await delay(300);
   console.log('   Fetching credits...');
   const credits = await httpsGet(`${TMDB_BASE_URL}/movie/${movieId}/credits?api_key=${TMDB_API_KEY}`);
-  
+
   await delay(300);
   console.log('   Fetching release dates...');
   const releaseDates = await httpsGet(`${TMDB_BASE_URL}/movie/${movieId}/release_dates?api_key=${TMDB_API_KEY}`);
-  
+
   await delay(300);
   console.log('   Fetching reviews...');
   const reviews = await httpsGet(`${TMDB_BASE_URL}/movie/${movieId}/reviews?api_key=${TMDB_API_KEY}&language=en-US`);
-  
+
   await delay(300);
   console.log('   Fetching keywords...');
   const keywords = await httpsGet(`${TMDB_BASE_URL}/movie/${movieId}/keywords?api_key=${TMDB_API_KEY}`);
-  
+
   await delay(300);
   console.log('   Fetching external IDs...');
   const externalIds = await httpsGet(`${TMDB_BASE_URL}/movie/${movieId}/external_ids?api_key=${TMDB_API_KEY}`);
-  
+
   await delay(300);
   console.log('   Fetching videos (trailers)...');
   const videos = await httpsGet(`${TMDB_BASE_URL}/movie/${movieId}/videos?api_key=${TMDB_API_KEY}&language=en-US`);
-  
+
   return { movie, credits, releaseDates, reviews, keywords, externalIds, videos };
 }
 
 async function main() {
   console.log('🎬 StreamVault Movie Adder');
   console.log('==========================\n');
-  
+
   if (!TMDB_API_KEY) {
     console.log('❌ Error: TMDB_API_KEY not found in .env file');
     console.log('   Make sure your .env file contains: TMDB_API_KEY=your_key_here');
@@ -148,36 +172,36 @@ async function main() {
     rl.close();
     return;
   }
-  
+
   try {
     // Get TMDB Movie ID
     const movieId = await question('Enter TMDB Movie ID: ');
-    
+
     if (!movieId || isNaN(movieId)) {
       console.log('❌ Invalid movie ID');
       rl.close();
       return;
     }
-    
+
     // Fetch movie data
     const { movie, credits, releaseDates, reviews, keywords, externalIds, videos } = await fetchMovieData(movieId);
-    
+
     console.log(`\n✅ Found: ${movie.title} (${movie.release_date?.split('-')[0] || 'N/A'})`);
     console.log(`   Overview: ${movie.overview?.substring(0, 100)}...`);
-    
+
     // Get Google Drive URL
     const googleDriveUrl = await question('\nEnter Google Drive URL (embed/preview format): ');
-    
+
     if (!googleDriveUrl) {
       console.log('❌ Google Drive URL is required');
       rl.close();
       return;
     }
-    
+
     // Ask for featured/trending
     const featured = (await question('Featured on homepage? (y/n): ')).toLowerCase() === 'y';
     const trending = (await question('Show in trending? (y/n): ')).toLowerCase() === 'y';
-    
+
     // Build cast details - top 10 cast members
     const topCast = credits.cast?.slice(0, 10) || [];
     const castNames = topCast.map(c => c.name).join(', ');
@@ -186,10 +210,10 @@ async function main() {
       character: c.character,
       profileUrl: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null
     }));
-    
+
     // Get directors
     const directors = credits.crew?.filter(c => c.job === 'Director').map(d => d.name).join(', ') || '';
-    
+
     // Build movie object
     const newMovie = {
       id: generateUUID(),
@@ -212,11 +236,11 @@ async function main() {
       category: mapCategory(movie.genres),
       castDetails: JSON.stringify(castDetails)
     };
-    
+
     // Load existing data
     console.log('\n📂 Loading existing data...');
     const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-    
+
     // Check if movie already exists
     const exists = data.movies.some(m => m.slug === newMovie.slug);
     if (exists) {
@@ -229,10 +253,10 @@ async function main() {
       }
       data.movies = data.movies.filter(m => m.slug !== newMovie.slug);
     }
-    
+
     // Add movie
     data.movies.push(newMovie);
-    
+
     // Generate detailed blog post with REAL data from TMDB
     const genre1 = newMovie.genres?.split(',')[0]?.trim() || 'Drama';
     const genre2 = newMovie.genres?.split(',')[1]?.trim() || '';
@@ -243,7 +267,7 @@ async function main() {
     const hours = Math.floor(newMovie.duration / 60);
     const mins = newMovie.duration % 60;
     const runtimeText = hours > 0 ? `${hours} hour${hours > 1 ? 's' : ''} ${mins} minutes` : `${newMovie.duration} minutes`;
-    
+
     // Get real data from TMDB
     const budgetFormatted = movie.budget ? `$${(movie.budget / 1000000).toFixed(0)} Million` : 'Not disclosed';
     const revenueFormatted = movie.revenue ? `$${(movie.revenue / 1000000).toFixed(0)} Million` : 'Not available';
@@ -252,27 +276,27 @@ async function main() {
     const tagline = movie.tagline || '';
     const voteCount = movie.vote_count || 0;
     const popularity = movie.popularity?.toFixed(0) || 0;
-    
+
     // Get real reviews from TMDB - show FULL content, no truncation
     const realReviews = reviews?.results?.slice(0, 3) || [];
     const reviewExcerpts = realReviews.map(r => {
       const content = r.content.replace(/\r\n/g, '\n').trim();
       return `**${r.author}** writes:\n\n"${content}"`;
     }).join('\n\n---\n\n');
-    
+
     // Get keywords
     const keywordList = keywords?.keywords?.slice(0, 10).map(k => k.name) || [];
-    
+
     // Get trailer
     const trailer = videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
     const trailerUrl = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
-    
+
     // Get writers and other crew
     const writers = credits.crew?.filter(c => c.job === 'Writer' || c.job === 'Screenplay').slice(0, 3).map(w => w.name).join(', ') || '';
     const cinematographer = credits.crew?.find(c => c.job === 'Director of Photography')?.name || '';
     const composer = credits.crew?.find(c => c.job === 'Original Music Composer' || c.job === 'Music')?.name || '';
     const editor = credits.crew?.find(c => c.job === 'Editor')?.name || '';
-    
+
     // Build real box office data
     const boxOfficeData = {
       budget: budgetFormatted,
@@ -280,7 +304,7 @@ async function main() {
       production_companies: productionCompanies,
       production_countries: productionCountries
     };
-    
+
     const blogPost = {
       id: `blog-${newMovie.slug}-${Date.now()}`,
       title: newMovie.title,
@@ -308,20 +332,42 @@ async function main() {
       behindTheScenes: `The making of ${newMovie.title} was an ambitious undertaking by ${productionCompanies}. ${director} assembled a talented team to bring this vision to life.\n\n${writers ? `The screenplay was crafted by ${writers}, who worked to create a compelling narrative.` : 'The screenplay went through careful development to achieve its final form.'}\n\nPre-production involved extensive research and planning to ensure authenticity. The production team worked meticulously on every detail, from set design to costume choices.\n\n${lead1}'s preparation was notable on set. Their commitment to the role elevated the entire production, with co-stars reporting that this dedication inspired everyone's performance.\n\n${cinematographer ? `Director of Photography ${cinematographer} worked closely with ${director} to create the film's distinctive visual style.` : 'The cinematography team worked to create a distinctive visual style.'}\n\n${composer ? `Composer ${composer} created the film's memorable score, which enhances the emotional impact of key scenes.` : 'The musical score was carefully crafted to enhance the emotional journey.'}\n\n${editor ? `Editor ${editor} shaped the final cut, ensuring tight pacing throughout the ${runtimeText} runtime.` : 'The editing process shaped the final cut with careful attention to pacing.'}\n\nThe film was shot in ${productionCountries}, with ${movie.budget ? `a budget of ${budgetFormatted}` : 'substantial resources'} dedicated to bringing the story to life.`,
       awards: `${newMovie.title} has received recognition for its quality:\n\n• TMDB Rating: ${newMovie.imdbRating}/10 (${voteCount.toLocaleString()} votes)\n• Popularity Score: ${popularity}\n${parseFloat(newMovie.imdbRating) >= 7.5 ? '• Critically acclaimed with high audience ratings\n' : '• Positive reception from audiences\n'}• ${lead1} received praise for their performance\n• ${director} recognized for strong direction\n${cinematographer ? `• ${cinematographer} praised for cinematography\n` : ''}${composer ? `• ${composer} recognized for the musical score\n` : ''}• Produced by ${productionCompanies}`,
       keywords: JSON.stringify(keywordList),
+      // NEW: Production companies with logos and websites for backlinks
+      productionCompanies: null, // Will be set below
+      // NEW: External links for social media backlinks
+      externalLinks: null, // Will be set below
       author: 'StreamVault Editorial',
       published: true,
       featured: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
+    // Fetch enriched production companies with logos and websites
+    console.log('   Fetching production company details for SEO backlinks...');
+    const enrichedProductionCompanies = await fetchProductionCompanyDetails(movie.production_companies || [], TMDB_API_KEY);
+    blogPost.productionCompanies = JSON.stringify(enrichedProductionCompanies);
+
+    // Build external links for social media backlinks
+    const externalLinksData = {
+      imdb: externalIds.imdb_id ? `https://www.imdb.com/title/${externalIds.imdb_id}` : null,
+      facebook: externalIds.facebook_id ? `https://www.facebook.com/${externalIds.facebook_id}` : null,
+      twitter: externalIds.twitter_id ? `https://twitter.com/${externalIds.twitter_id}` : null,
+      instagram: externalIds.instagram_id ? `https://www.instagram.com/${externalIds.instagram_id}` : null,
+      homepage: movie.homepage || null
+    };
+    blogPost.externalLinks = JSON.stringify(externalLinksData);
+    console.log('   ✅ Production companies and external links added!');
+
     if (!data.blogPosts) data.blogPosts = [];
+    // Remove existing blog post for this movie if any
+    data.blogPosts = data.blogPosts.filter(b => b.contentId !== newMovie.id && !b.slug.includes(newMovie.slug));
     data.blogPosts.push(blogPost);
-    
+
     // Save data
     console.log('\n💾 Saving data...');
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    
+
     console.log('\n✅ Movie added successfully!');
     console.log(`   Title: ${newMovie.title}`);
     console.log(`   Slug: ${newMovie.slug}`);
@@ -330,11 +376,11 @@ async function main() {
     console.log(`   Duration: ${newMovie.duration} min`);
     console.log(`   Category: ${newMovie.category}`);
     console.log(`   Blog post: Created`);
-    
+
   } catch (error) {
     console.error('\n❌ Error:', error.message);
   }
-  
+
   rl.close();
 }
 
