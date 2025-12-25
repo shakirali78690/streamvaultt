@@ -1524,8 +1524,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           failed++;
         }
 
-        // Rate limiting
-        await new Promise(r => setTimeout(r, 100));
+        // Rate limiting - 2 requests per second max
+        await new Promise(r => setTimeout(r, 600));
       }
 
       res.json({
