@@ -1289,6 +1289,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Get featured blog posts
+      const blogPosts = await storage.getAllBlogPosts();
+      const featuredBlogs = blogPosts.filter((b: any) => b.featured).slice(0, 3);
+      const latestBlogs = featuredBlogs.length > 0 ? featuredBlogs : blogPosts.slice(0, 3);
+
       const totalNew = newShows.length + newMovies.length;
 
       // Generate professional email HTML
@@ -1424,6 +1429,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 </tr>
               </table>
 
+              <!-- Blog Section -->
+              ${latestBlogs.length > 0 ? `
+              <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:25px;">
+                <tr>
+                  <td style="padding:12px 0;">
+                    <h3 style="margin:0;color:#e50914;font-size:18px;font-weight:700;border-left:4px solid #e50914;padding-left:12px;">📰 Latest Articles</h3>
+                  </td>
+                </tr>
+                ${latestBlogs.map((blog: any) => `
+                <tr>
+                  <td style="padding:12px 0;border-bottom:1px solid #2a2a2a;">
+                    <a href="https://streamvault.live/blog/${blog.slug}" style="text-decoration:none;">
+                      <h4 style="margin:0 0 6px 0;color:#ffffff;font-size:16px;font-weight:600;">${blog.title}</h4>
+                      <p style="margin:0;color:#888;font-size:13px;">${(blog.excerpt || '').substring(0, 100)}...</p>
+                    </a>
+                  </td>
+                </tr>
+                `).join('')}
+              </table>
+              ` : ''}
+
             </td>
           </tr>
 
@@ -1440,6 +1466,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   <td style="padding:0 8px;"><a href="https://telegram.streamvault.in" style="color:#888;text-decoration:none;font-size:13px;">Telegram</a></td>
                   <td style="color:#444;">•</td>
                   <td style="padding:0 8px;"><a href="https://whatsapp.streamvault.in" style="color:#888;text-decoration:none;font-size:13px;">WhatsApp</a></td>
+                  <td style="color:#444;">•</td>
+                  <td style="padding:0 8px;"><a href="https://facebook.streamvault.in" style="color:#888;text-decoration:none;font-size:13px;">Facebook</a></td>
                 </tr>
               </table>
               <p style="margin:0 0 10px 0;color:#555;font-size:12px;">You received this email because you subscribed to StreamVault newsletter.</p>
