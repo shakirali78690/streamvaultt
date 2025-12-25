@@ -9,6 +9,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { setupSitemaps } from "./sitemap";
 import { sendContentRequestEmail, sendIssueReportEmail } from "./email-service";
+import webpush from "web-push";
 
 // ESM compatible __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -1228,6 +1229,188 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch subscribers" });
+    }
+  });
+
+  // ==========================================
+  // PUSH NOTIFICATIONS
+  // ==========================================
+
+  const PUSH_SUBSCRIPTIONS_FILE = path.join(__dirname, "..", "data", "push-subscriptions.json");
+
+  // Configure web-push with VAPID keys
+  const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+  const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+
+  if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+      'mailto:contact@streamvault.live',
+      VAPID_PUBLIC_KEY,
+      VAPID_PRIVATE_KEY
+    );
+  }
+
+  // Get VAPID public key
+  app.get("/api/push/vapid-key", (_req, res) => {
+    if (!VAPID_PUBLIC_KEY) {
+      return res.status(500).json({ error: "VAPID key not configured" });
+    }
+    res.json({ publicKey: VAPID_PUBLIC_KEY });
+  });
+
+  // Subscribe to push notifications
+  app.post("/api/push/subscribe", async (req, res) => {
+    try {
+      const subscription = req.body;
+
+      if (!subscription || !subscription.endpoint) {
+        return res.status(400).json({ error: "Invalid subscription" });
+      }
+
+      // Load existing subscriptions
+      let data = { subscriptions: [] as any[] };
+      if (existsSync(PUSH_SUBSCRIPTIONS_FILE)) {
+        data = JSON.parse(readFileSync(PUSH_SUBSCRIPTIONS_FILE, "utf-8"));
+      }
+
+      // Check for duplicate
+      const exists = data.subscriptions.some((s: any) => s.endpoint === subscription.endpoint);
+      if (!exists) {
+        data.subscriptions.push({
+          ...subscription,
+          subscribedAt: new Date().toISOString()
+        });
+        writeFileSync(PUSH_SUBSCRIPTIONS_FILE, JSON.stringify(data, null, 2));
+        console.log(`🔔 New push subscriber (total: ${data.subscriptions.length})`);
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Push subscription error:", error);
+      res.status(500).json({ error: "Failed to subscribe" });
+    }
+  });
+
+  // Unsubscribe from push notifications
+  app.post("/api/push/unsubscribe", async (req, res) => {
+    try {
+      const { endpoint } = req.body;
+
+      if (!existsSync(PUSH_SUBSCRIPTIONS_FILE)) {
+        return res.json({ success: true });
+      }
+
+      const data = JSON.parse(readFileSync(PUSH_SUBSCRIPTIONS_FILE, "utf-8"));
+      data.subscriptions = data.subscriptions.filter((s: any) => s.endpoint !== endpoint);
+      writeFileSync(PUSH_SUBSCRIPTIONS_FILE, JSON.stringify(data, null, 2));
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to unsubscribe" });
+    }
+  });
+
+  // Get push subscriber count (admin only)
+  app.get("/api/admin/push/subscribers", requireAdmin, async (_req, res) => {
+    try {
+      if (!existsSync(PUSH_SUBSCRIPTIONS_FILE)) {
+        return res.json({ count: 0 });
+      }
+      const data = JSON.parse(readFileSync(PUSH_SUBSCRIPTIONS_FILE, "utf-8"));
+      res.json({ count: data.subscriptions?.length || 0 });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch count" });
+    }
+  });
+
+  // Send push notification (admin only)
+  app.post("/api/admin/push/send", requireAdmin, async (req, res) => {
+    try {
+      const { title, body, url, type, contentId } = req.body;
+
+      if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+        return res.status(400).json({ error: "VAPID keys not configured" });
+      }
+
+      if (!existsSync(PUSH_SUBSCRIPTIONS_FILE)) {
+        return res.status(400).json({ error: "No push subscribers" });
+      }
+
+      const data = JSON.parse(readFileSync(PUSH_SUBSCRIPTIONS_FILE, "utf-8"));
+      const subscriptions = data.subscriptions || [];
+
+      if (subscriptions.length === 0) {
+        return res.status(400).json({ error: "No push subscribers" });
+      }
+
+      // Build notification based on type
+      let notificationTitle = title || "StreamVault Update";
+      let notificationBody = body || "Check out what's new!";
+      let notificationUrl = url || "https://streamvault.live";
+      let notificationIcon = "https://streamvault.live/favicon.svg";
+
+      // If content type is specified, fetch content details
+      if (type && contentId) {
+        if (type === 'show') {
+          const shows = await storage.getShows();
+          const show = shows.find((s: any) => s.id === contentId);
+          if (show) {
+            notificationTitle = `🎬 New on StreamVault: ${show.title}`;
+            notificationBody = show.description?.substring(0, 100) + '...' || `Watch ${show.title} now!`;
+            notificationUrl = `https://streamvault.live/show/${show.slug}`;
+            notificationIcon = show.posterUrl || notificationIcon;
+          }
+        } else if (type === 'movie') {
+          const movies = await storage.getMovies();
+          const movie = movies.find((m: any) => m.id === contentId);
+          if (movie) {
+            notificationTitle = `🎬 New Movie: ${movie.title}`;
+            notificationBody = movie.description?.substring(0, 100) + '...' || `Watch ${movie.title} now!`;
+            notificationUrl = `https://streamvault.live/movie/${movie.slug}`;
+            notificationIcon = movie.posterUrl || notificationIcon;
+          }
+        }
+      }
+
+      const payload = JSON.stringify({
+        title: notificationTitle,
+        body: notificationBody,
+        icon: notificationIcon,
+        badge: "https://streamvault.live/favicon.svg",
+        url: notificationUrl,
+        timestamp: Date.now()
+      });
+
+      let sent = 0;
+      let failed = 0;
+      const failedEndpoints: string[] = [];
+
+      for (const sub of subscriptions) {
+        try {
+          await webpush.sendNotification(sub, payload);
+          sent++;
+        } catch (err: any) {
+          failed++;
+          // Remove invalid subscriptions (410 Gone or 404)
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            failedEndpoints.push(sub.endpoint);
+          }
+        }
+      }
+
+      // Clean up invalid subscriptions
+      if (failedEndpoints.length > 0) {
+        data.subscriptions = data.subscriptions.filter(
+          (s: any) => !failedEndpoints.includes(s.endpoint)
+        );
+        writeFileSync(PUSH_SUBSCRIPTIONS_FILE, JSON.stringify(data, null, 2));
+      }
+
+      console.log(`🔔 Push sent: ${sent} success, ${failed} failed`);
+      res.json({ success: true, sent, failed, cleaned: failedEndpoints.length });
+    } catch (error: any) {
+      console.error("Push send error:", error);
+      res.status(500).json({ error: error.message || "Failed to send push" });
     }
   });
 
