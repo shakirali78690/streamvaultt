@@ -63,6 +63,13 @@ const newEpisodes = [
 // Insert after episode 4
 data.episodes.splice(ep4Index + 1, 0, ...newEpisodes);
 
+// Update the show's updatedAt timestamp so it appears in newsletter
+const showIndex = data.shows.findIndex(s => s.id === showId);
+if (showIndex !== -1) {
+    data.shows[showIndex].updatedAt = new Date().toISOString();
+    console.log('Updated show updatedAt timestamp');
+}
+
 fs.writeFileSync('./data/streamvault-data.json', JSON.stringify(data, null, 2));
 console.log('Added 3 episodes successfully!');
 console.log('New episodes at indexes:', ep4Index + 1, ep4Index + 2, ep4Index + 3);

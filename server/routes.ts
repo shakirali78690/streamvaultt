@@ -1451,25 +1451,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const contentData = JSON.parse(readFileSync(DATA_FILE, "utf-8"));
 
-      // Get featured content
-      let newShows = (contentData.shows || [])
-        .filter((s: any) => s.trending || s.featured)
-        .slice(0, 6);
+      // Get content - prioritize by most recent date (createdAt or updatedAt)
+      const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      // Helper to get most recent date (createdAt or updatedAt)
+      const getLatestDate = (item: any) => {
+        const created = item.createdAt ? new Date(item.createdAt).getTime() : 0;
+        const updated = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
+        return Math.max(created, updated);
+      };
+
+      // Sort shows by most recent date (newest first)
+      let allShows = (contentData.shows || [])
+        .sort((a: any, b: any) => getLatestDate(b) - getLatestDate(a));
+
+      // Get new/updated shows (in last week) or fall back to trending/featured
+      let newShows = allShows.filter((s: any) => {
+        const latestDate = new Date(Math.max(
+          s.createdAt ? new Date(s.createdAt).getTime() : 0,
+          s.updatedAt ? new Date(s.updatedAt).getTime() : 0
+        )).toISOString();
+        return latestDate >= oneWeekAgo;
+      }).slice(0, 6);
+      if (newShows.length < 5) {
+        newShows = allShows.filter((s: any) => s.trending || s.featured).slice(0, 6);
+      }
       if (newShows.length === 0) {
-        newShows = (contentData.shows || []).slice(0, 6);
+        newShows = allShows.slice(0, 6);
       }
 
-      let newMovies = (contentData.movies || [])
-        .filter((m: any) => m.trending || m.featured)
-        .slice(0, 6);
+      // Sort movies by most recent date (newest first)
+      let allMovies = (contentData.movies || [])
+        .sort((a: any, b: any) => getLatestDate(b) - getLatestDate(a));
+
+      // Get new movies (in last week) or fall back to trending/featured
+      let newMovies = allMovies.filter((m: any) => {
+        const latestDate = new Date(Math.max(
+          m.createdAt ? new Date(m.createdAt).getTime() : 0,
+          m.updatedAt ? new Date(m.updatedAt).getTime() : 0
+        )).toISOString();
+        return latestDate >= oneWeekAgo;
+      }).slice(0, 6);
+      if (newMovies.length < 5) {
+        newMovies = allMovies.filter((m: any) => m.trending || m.featured).slice(0, 6);
+      }
       if (newMovies.length === 0) {
-        newMovies = (contentData.movies || []).slice(0, 6);
+        newMovies = allMovies.slice(0, 6);
       }
 
       // Get blog posts
       const blogPosts = await storage.getAllBlogPosts();
-      const featuredBlogs = blogPosts.filter((b: any) => b.featured).slice(0, 3);
-      const latestBlogs = featuredBlogs.length > 0 ? featuredBlogs : blogPosts.slice(0, 3);
+      const featuredBlogs = blogPosts.filter((b: any) => b.featured).slice(0, 5);
+      const latestBlogs = featuredBlogs.length > 0 ? featuredBlogs : blogPosts.slice(0, 5);
 
       // Generate email HTML (simplified version)
       const generateContentRow = (items: any[], type: string) => {

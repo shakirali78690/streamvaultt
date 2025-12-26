@@ -234,7 +234,9 @@ async function main() {
       featured: featured,
       trending: trending,
       category: mapCategory(movie.genres),
-      castDetails: JSON.stringify(castDetails)
+      castDetails: JSON.stringify(castDetails),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     // Load existing data

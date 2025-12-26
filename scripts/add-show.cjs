@@ -288,7 +288,9 @@ async function main() {
       featured: featured,
       trending: trending,
       category: mapCategory(show.genres),
-      castDetails: JSON.stringify(castDetails)
+      castDetails: JSON.stringify(castDetails),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     // Collect episodes and season details for each season
@@ -376,6 +378,11 @@ async function main() {
         rl.close();
         return;
       }
+      // Preserve original createdAt, only update updatedAt
+      newShow.createdAt = existingShow.createdAt || newShow.createdAt;
+      newShow.updatedAt = new Date().toISOString();
+      newShow.id = existingShow.id; // Keep same ID for episode references
+
       // Remove existing show
       data.shows = data.shows.filter(s => s.slug !== newShow.slug);
       // Keep existing episodes for other seasons, remove episodes for seasons we're adding
