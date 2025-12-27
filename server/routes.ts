@@ -1506,7 +1506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate email HTML (simplified version)
       const generateContentRow = (items: any[], type: string) => {
-        return items.slice(0, 3).map((item: any) => {
+        return items.slice(0, 5).map((item: any) => {
           const url = type === 'show'
             ? `https://streamvault.live/show/${item.slug}`
             : `https://streamvault.live/movie/${item.slug}`;
