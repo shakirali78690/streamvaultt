@@ -16,11 +16,11 @@ function generateBlogContent(item, type) {
   const rating = item.rating || 'NR';
   const imdbRating = item.imdbRating || 'N/A';
   const duration = item.duration || 0;
-  
+
   const slug = `${item.slug}-${year}-complete-guide`;
-  
+
   const excerpt = `${title} (${year}) is a ${genres.split(',')[0]?.trim() || 'captivating'} ${isMovie ? 'movie' : 'TV series'} that has captured audiences worldwide. This comprehensive guide covers everything you need to know - from plot details to behind-the-scenes insights.`;
-  
+
   const content = `${title} stands as one of the most ${genres.includes('Action') ? 'thrilling' : genres.includes('Drama') ? 'emotionally compelling' : genres.includes('Comedy') ? 'entertaining' : 'captivating'} ${isMovie ? 'films' : 'series'} of ${year}. ${isMovie ? `With a runtime that allows the story to fully develop, this ${genres.split(',')[0]?.trim()?.toLowerCase() || ''} masterpiece` : `Spanning multiple episodes, this ${genres.split(',')[0]?.trim()?.toLowerCase() || ''} series`} delivers an unforgettable viewing experience.
 
 ${description}
@@ -72,7 +72,7 @@ Production took place across ${language === 'English' ? 'multiple locations' : `
 
 Post-production involved extensive work on visual effects, sound design, and editing to create the polished final product that audiences enjoy today.`;
 
-  const awards = imdbRating !== 'N/A' && parseFloat(imdbRating) >= 7.5 
+  const awards = imdbRating !== 'N/A' && parseFloat(imdbRating) >= 7.5
     ? `Critically Acclaimed - IMDb ${imdbRating}/10\nAudience Favorite ${year}\nTop Rated ${genres.split(',')[0]?.trim() || ''} ${isMovie ? 'Film' : 'Series'}`
     : null;
 
@@ -91,6 +91,10 @@ Post-production involved extensive work on visual effects, sound design, and edi
     trivia,
     behindTheScenes,
     awards,
+    keywords: JSON.stringify(genres.split(',').map(g => g.trim().toLowerCase()).filter(Boolean)),
+    productionCompanies: null,
+    externalLinks: null,
+    seasonDetails: !isMovie ? JSON.stringify([]) : null,
     author: "StreamVault Editorial",
     published: true,
     featured: false,
@@ -102,56 +106,56 @@ Post-production involved extensive work on visual effects, sound design, and edi
 try {
   console.log('📖 Reading data file...');
   const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-  
+
   // Initialize blogPosts array if it doesn't exist
   if (!data.blogPosts) {
     data.blogPosts = [];
   }
-  
+
   const existingSlugs = new Set(data.blogPosts.map(p => p.slug));
   let addedCount = 0;
   let skippedCount = 0;
-  
+
   // Generate blog posts for all movies
   console.log(`\n🎬 Processing ${data.movies?.length || 0} movies...`);
   for (const movie of (data.movies || [])) {
     const blogPost = generateBlogContent(movie, 'movie');
-    
+
     if (existingSlugs.has(blogPost.slug)) {
       skippedCount++;
       continue;
     }
-    
+
     data.blogPosts.push(blogPost);
     existingSlugs.add(blogPost.slug);
     addedCount++;
   }
-  
+
   // Generate blog posts for all shows
   console.log(`📺 Processing ${data.shows?.length || 0} shows...`);
   for (const show of (data.shows || [])) {
     const blogPost = generateBlogContent(show, 'show');
-    
+
     if (existingSlugs.has(blogPost.slug)) {
       skippedCount++;
       continue;
     }
-    
+
     data.blogPosts.push(blogPost);
     existingSlugs.add(blogPost.slug);
     addedCount++;
   }
-  
+
   data.lastUpdated = new Date().toISOString();
-  
+
   console.log('\n💾 Saving data file...');
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  
+
   console.log('\n🎉 Blog posts generation complete!');
   console.log(`   ✅ Added: ${addedCount} new blog posts`);
   console.log(`   ⏭️  Skipped: ${skippedCount} (already exist)`);
   console.log(`   📊 Total blog posts: ${data.blogPosts.length}`);
-  
+
 } catch (error) {
   console.error('❌ Error:', error.message);
 }

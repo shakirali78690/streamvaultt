@@ -16,11 +16,11 @@ function generateBlogContent(item, type) {
   const rating = item.rating || 'NR';
   const imdbRating = item.imdbRating || 'N/A';
   const duration = item.duration || 0;
-  
+
   const slug = `${item.slug}-${year}-complete-guide`;
-  
+
   const excerpt = `${title} (${year}) is a ${genres.split(',')[0]?.trim() || 'captivating'} ${isMovie ? 'movie' : 'TV series'} that has captured audiences worldwide. This comprehensive guide covers everything you need to know - from plot details to behind-the-scenes insights.`;
-  
+
   const content = `${title} stands as one of the most ${genres.includes('Action') ? 'thrilling' : genres.includes('Drama') ? 'emotionally compelling' : genres.includes('Comedy') ? 'entertaining' : 'captivating'} ${isMovie ? 'films' : 'series'} of ${year}. ${isMovie ? `With a runtime that allows the story to fully develop, this ${genres.split(',')[0]?.trim()?.toLowerCase() || ''} masterpiece` : `Spanning multiple episodes, this ${genres.split(',')[0]?.trim()?.toLowerCase() || ''} series`} delivers an unforgettable viewing experience.
 
 ${description}
@@ -91,6 +91,10 @@ The post-production process involved careful editing, color grading, and sound d
     trivia: trivia,
     behindTheScenes: behindTheScenes,
     awards: awards,
+    keywords: JSON.stringify(genres.split(',').map(g => g.trim().toLowerCase()).filter(Boolean)),
+    productionCompanies: null,
+    externalLinks: null,
+    seasonDetails: !isMovie ? JSON.stringify([]) : null,
     author: 'StreamVault Editorial',
     published: true,
     featured: false,
@@ -101,81 +105,81 @@ The post-production process involved careful editing, color grading, and sound d
 
 function main() {
   console.log('📝 Checking for missing blog posts...\n');
-  
+
   // Load data
   const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-  
+
   // Get existing blog post content IDs
   const existingBlogContentIds = new Set(
     (data.blogPosts || []).map(bp => bp.contentId)
   );
-  
+
   // Also check by slug prefix
   const existingBlogSlugs = new Set(
     (data.blogPosts || []).map(bp => bp.slug.split('-')[0])
   );
-  
+
   // Find movies without blog posts
-  const moviesWithoutBlog = data.movies.filter(movie => 
-    !existingBlogContentIds.has(movie.id) && 
+  const moviesWithoutBlog = data.movies.filter(movie =>
+    !existingBlogContentIds.has(movie.id) &&
     !existingBlogSlugs.has(movie.slug.split('-')[0])
   );
-  
+
   // Find shows without blog posts
-  const showsWithoutBlog = data.shows.filter(show => 
+  const showsWithoutBlog = data.shows.filter(show =>
     !existingBlogContentIds.has(show.id) &&
     !existingBlogSlugs.has(show.slug.split('-')[0])
   );
-  
+
   console.log(`📊 Found:`);
   console.log(`   - ${moviesWithoutBlog.length} movies without blog posts`);
   console.log(`   - ${showsWithoutBlog.length} shows without blog posts`);
-  
+
   if (moviesWithoutBlog.length === 0 && showsWithoutBlog.length === 0) {
     console.log('\n✅ All movies and shows have blog posts!');
     return;
   }
-  
+
   // List them
   if (moviesWithoutBlog.length > 0) {
     console.log('\n🎬 Movies without blog posts:');
     moviesWithoutBlog.forEach(m => console.log(`   - ${m.title} (${m.year})`));
   }
-  
+
   if (showsWithoutBlog.length > 0) {
     console.log('\n📺 Shows without blog posts:');
     showsWithoutBlog.forEach(s => console.log(`   - ${s.title} (${s.year})`));
   }
-  
+
   // Generate blog posts
   console.log('\n📝 Generating blog posts...\n');
-  
+
   const newBlogPosts = [];
-  
+
   // Generate for movies
   for (const movie of moviesWithoutBlog) {
     const blogPost = generateBlogContent(movie, 'movie');
     newBlogPosts.push(blogPost);
     console.log(`   ✅ Generated blog post for: ${movie.title}`);
   }
-  
+
   // Generate for shows
   for (const show of showsWithoutBlog) {
     const blogPost = generateBlogContent(show, 'show');
     newBlogPosts.push(blogPost);
     console.log(`   ✅ Generated blog post for: ${show.title}`);
   }
-  
+
   // Add to data
   if (!data.blogPosts) {
     data.blogPosts = [];
   }
   data.blogPosts.push(...newBlogPosts);
-  
+
   // Save
   console.log('\n💾 Saving data...');
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-  
+
   console.log(`\n✅ Done! Added ${newBlogPosts.length} new blog posts.`);
   console.log(`   Total blog posts: ${data.blogPosts.length}`);
 }
