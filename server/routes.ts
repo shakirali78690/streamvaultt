@@ -1760,43 +1760,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const contentData = JSON.parse(readFileSync(DATA_FILE, "utf-8"));
 
-      // Get new content from last 7 days
+      // Get new/updated content from last 7 days (uses max of createdAt and updatedAt)
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - 7);
 
-      let newShows = (contentData.shows || []).filter((show: any) => {
-        const createdAt = new Date(show.createdAt || 0);
-        return createdAt >= cutoffDate;
-      }).slice(0, 6);
+      const getLatestDate = (item: any) => Math.max(
+        item.createdAt ? new Date(item.createdAt).getTime() : 0,
+        item.updatedAt ? new Date(item.updatedAt).getTime() : 0
+      );
 
-      let newMovies = (contentData.movies || []).filter((movie: any) => {
-        const createdAt = new Date(movie.createdAt || 0);
-        return createdAt >= cutoffDate;
-      }).slice(0, 6);
+      // Sort shows by most recent date
+      let allShows = (contentData.shows || [])
+        .sort((a: any, b: any) => getLatestDate(b) - getLatestDate(a));
 
-      // If no new content, show trending/featured content instead
+      let newShows = allShows.filter((show: any) => {
+        const latestDate = new Date(getLatestDate(show));
+        return latestDate >= cutoffDate;
+      }).slice(0, 5);
+
+      // Sort movies by most recent date  
+      let allMovies = (contentData.movies || [])
+        .sort((a: any, b: any) => getLatestDate(b) - getLatestDate(a));
+
+      let newMovies = allMovies.filter((movie: any) => {
+        const latestDate = new Date(getLatestDate(movie));
+        return latestDate >= cutoffDate;
+      }).slice(0, 5);
+
+      // If not enough new content, add trending/featured content
+      if (newShows.length < 5) {
+        const trendingShows = allShows.filter((s: any) => s.trending || s.featured && !newShows.find((ns: any) => ns.id === s.id));
+        newShows = [...newShows, ...trendingShows].slice(0, 5);
+      }
       if (newShows.length === 0) {
-        newShows = (contentData.shows || [])
-          .filter((s: any) => s.trending || s.featured)
-          .slice(0, 6);
-        if (newShows.length === 0) {
-          newShows = (contentData.shows || []).slice(0, 6);
-        }
+        newShows = allShows.slice(0, 5);
       }
 
+      if (newMovies.length < 5) {
+        const trendingMovies = allMovies.filter((m: any) => m.trending || m.featured && !newMovies.find((nm: any) => nm.id === m.id));
+        newMovies = [...newMovies, ...trendingMovies].slice(0, 5);
+      }
       if (newMovies.length === 0) {
-        newMovies = (contentData.movies || [])
-          .filter((m: any) => m.trending || m.featured)
-          .slice(0, 6);
-        if (newMovies.length === 0) {
-          newMovies = (contentData.movies || []).slice(0, 6);
-        }
+        newMovies = allMovies.slice(0, 5);
       }
 
-      // Get featured blog posts
+      // Get blog posts - sorted by most recent, limit 5
       const blogPosts = await storage.getAllBlogPosts();
-      const featuredBlogs = blogPosts.filter((b: any) => b.featured).slice(0, 3);
-      const latestBlogs = featuredBlogs.length > 0 ? featuredBlogs : blogPosts.slice(0, 3);
+      const sortedBlogs = [...blogPosts].sort((a: any, b: any) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      const featuredBlogs = sortedBlogs.filter((b: any) => b.featured).slice(0, 5);
+      const latestBlogs = featuredBlogs.length >= 5 ? featuredBlogs : sortedBlogs.slice(0, 5);
 
       const totalNew = newShows.length + newMovies.length;
 
@@ -1882,7 +1898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     <h3 style="margin:0;color:#e50914;font-size:18px;font-weight:700;border-left:4px solid #e50914;padding-left:12px;">📺 Featured TV Shows</h3>
                   </td>
                 </tr>
-                ${generateContentRow(newShows.slice(0, 3), 'show')}
+                ${generateContentRow(newShows.slice(0, 5), 'show')}
               </table>
               ` : ''}
 
@@ -1894,7 +1910,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     <h3 style="margin:0;color:#e50914;font-size:18px;font-weight:700;border-left:4px solid #e50914;padding-left:12px;">🎬 Featured Movies</h3>
                   </td>
                 </tr>
-                ${generateContentRow(newMovies.slice(0, 3), 'movie')}
+                ${generateContentRow(newMovies.slice(0, 5), 'movie')}
               </table>
               ` : ''}
 
@@ -1943,11 +1959,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 </tr>
                 ${latestBlogs.map((blog: any) => `
                 <tr>
-                  <td style="padding:12px 0;border-bottom:1px solid #2a2a2a;">
-                    <a href="https://streamvault.live/blog/${blog.slug}" style="text-decoration:none;">
-                      <h4 style="margin:0 0 6px 0;color:#ffffff;font-size:16px;font-weight:600;">${blog.title}</h4>
-                      <p style="margin:0;color:#888;font-size:13px;">${(blog.excerpt || '').substring(0, 100)}...</p>
-                    </a>
+                  <td style="padding:15px 0;border-bottom:1px solid #2a2a2a;">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                      <tr>
+                        ${blog.featuredImage ? `
+                        <td width="120" style="vertical-align:top;">
+                          <a href="https://streamvault.live/blog/${blog.contentType || 'show'}/${blog.slug}">
+                            <img src="${blog.featuredImage}" alt="${blog.title}" width="120" height="70" style="border-radius:6px;display:block;object-fit:cover;">
+                          </a>
+                        </td>` : ''}
+                        <td style="${blog.featuredImage ? 'padding-left:15px;' : ''}vertical-align:top;">
+                          <a href="https://streamvault.live/blog/${blog.contentType || 'show'}/${blog.slug}" style="text-decoration:none;">
+                            <h4 style="margin:0 0 6px 0;color:#ffffff;font-size:15px;font-weight:600;">${blog.title}</h4>
+                            <p style="margin:0;color:#888;font-size:13px;line-height:1.4;">${(blog.excerpt || '').substring(0, 80)}...</p>
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 `).join('')}
