@@ -312,6 +312,14 @@ function WatchTogetherContent() {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // Auto-start voice chat when user joins (muted by default)
+    useEffect(() => {
+        if (currentUser && !isVoiceEnabled && socket) {
+            console.log('🎤 Auto-starting voice chat (muted by default)...');
+            startVoice();
+        }
+    }, [currentUser, socket]);
+
     // Handle join
     const handleJoin = () => {
         if (username.trim() && roomCode) {
@@ -490,11 +498,12 @@ function WatchTogetherContent() {
 
                         {/* Voice Chat Toggle */}
                         <Button
-                            variant={isVoiceEnabled ? (isMuted ? 'outline' : 'default') : 'ghost'}
+                            variant={isMuted ? 'outline' : 'default'}
                             size="sm"
-                            onClick={isVoiceEnabled ? toggleMute : startVoice}
-                            className={`relative ${isVoiceEnabled && !isMuted ? 'bg-green-600 hover:bg-green-700' : ''} ${isSpeaking ? 'ring-2 ring-green-400 ring-offset-2 ring-offset-background' : ''}`}
-                            title={isVoiceEnabled ? (isMuted ? 'Unmute' : 'Mute') : 'Join Voice Chat'}
+                            onClick={toggleMute}
+                            disabled={!isVoiceEnabled}
+                            className={`relative ${!isMuted ? 'bg-green-600 hover:bg-green-700' : ''} ${isSpeaking ? 'ring-2 ring-green-400 ring-offset-2 ring-offset-background' : ''}`}
+                            title={isMuted ? 'Unmute (click to speak)' : 'Mute'}
                         >
                             {isSpeaking && (
                                 <span className="absolute inset-0 rounded-md animate-ping bg-green-400 opacity-30" />

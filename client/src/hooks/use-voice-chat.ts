@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import Peer from 'simple-peer';
+// @ts-ignore - simple-peer doesn't have proper ESM exports
+import SimplePeer from 'simple-peer/simplepeer.min.js';
 import type { Socket } from 'socket.io-client';
 
 interface VoiceChatOptions {
@@ -11,7 +12,7 @@ interface VoiceChatOptions {
 
 interface PeerConnection {
     peerId: string;
-    peer: Peer.Instance;
+    peer: any; // SimplePeer instance
     stream?: MediaStream;
 }
 
@@ -101,7 +102,7 @@ export function useVoiceChat({ socket, roomUsers, currentUserId, enabled = true 
         try {
             console.log(`🔗 Creating peer connection to ${targetId}, initiator: ${initiator}`);
 
-            const peer = new Peer({
+            const peer = new SimplePeer({
                 initiator,
                 trickle: true,
                 stream,
@@ -113,11 +114,11 @@ export function useVoiceChat({ socket, roomUsers, currentUserId, enabled = true 
                 }
             });
 
-            peer.on('signal', (signal) => {
+            peer.on('signal', (signal: any) => {
                 socket?.emit('voice:signal', { targetId, signal });
             });
 
-            peer.on('stream', (remoteStream) => {
+            peer.on('stream', (remoteStream: MediaStream) => {
                 console.log(`🔊 Received stream from ${targetId}`, remoteStream);
                 console.log('🔊 Audio tracks:', remoteStream.getAudioTracks());
 
@@ -171,7 +172,7 @@ export function useVoiceChat({ socket, roomUsers, currentUserId, enabled = true 
                 }
             });
 
-            peer.on('error', (err) => {
+            peer.on('error', (err: Error) => {
                 console.error(`Peer error with ${targetId}:`, err);
             });
 
@@ -212,8 +213,38 @@ export function useVoiceChat({ socket, roomUsers, currentUserId, enabled = true 
 
         socket.on('voice:signal', handleSignal);
 
+        // Handle being muted/unmuted by host
+        const handleMutedByHost = ({ isMuted: shouldMute }: { isMuted: boolean }) => {
+            console.log(`🔇 Host ${shouldMute ? 'muted' : 'unmuted'} you`);
+
+            if (shouldMute) {
+                // Host muting - force mute immediately
+                if (localStreamRef.current) {
+                    localStreamRef.current.getAudioTracks().forEach(track => {
+                        track.enabled = false;
+                    });
+                }
+                setIsMuted(true);
+                alert('The host has muted you');
+            } else {
+                // Host asking to unmute - prompt user for permission
+                const acceptUnmute = confirm('The host is asking you to unmute. Do you want to unmute your microphone?');
+                if (acceptUnmute) {
+                    if (localStreamRef.current) {
+                        localStreamRef.current.getAudioTracks().forEach(track => {
+                            track.enabled = true;
+                        });
+                    }
+                    setIsMuted(false);
+                }
+            }
+        };
+
+        socket.on('voice:muted-by-host', handleMutedByHost);
+
         return () => {
             socket.off('voice:signal', handleSignal);
+            socket.off('voice:muted-by-host', handleMutedByHost);
         };
     }, [socket, isVoiceEnabled, createPeer]);
 
