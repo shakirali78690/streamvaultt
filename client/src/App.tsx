@@ -8,10 +8,10 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Chatbot } from "@/components/chatbot";
-import { AdBanner } from "@/components/ad-banner";
 import { AdBlockDetector } from "@/components/adblock-detector";
 import { InstallPrompt } from "@/components/install-prompt";
 import { NotificationPrompt } from "@/components/notification-prompt";
+import { ResponsiveHeaderBanner, NativeBanner, Banner468x60, SmartlinkFloatingVIP, SmartlinkPremiumBanner } from "@/components/AdsterraAds";
 import Home from "@/pages/home";
 import ShowDetail from "@/pages/show-detail";
 import Watch from "@/pages/watch";
@@ -52,6 +52,12 @@ function Router() {
   return (
     <>
       {!isWatchTogether && <Header />}
+      {/* Header Ads - Responsive (728x90 desktop, 320x50 mobile) */}
+      {!isWatchTogether && (
+        <div className="container mx-auto px-4">
+          <ResponsiveHeaderBanner />
+        </div>
+      )}
       <main>
         <Switch>
           <Route path="/" component={Home} />
@@ -88,13 +94,17 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </main>
+      {/* Pre-Footer Ads */}
       {!isWatchTogether && (
         <div className="container mx-auto px-4">
-          <AdBanner />
+          <NativeBanner />
+          <Banner468x60 />
         </div>
       )}
       {!isWatchTogether && <Footer />}
       {!isWatchTogether && <Chatbot />}
+      {/* Floating VIP Button - Always visible */}
+      {!isWatchTogether && <SmartlinkFloatingVIP />}
       <InstallPrompt />
       <NotificationPrompt />
     </>

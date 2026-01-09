@@ -383,3 +383,86 @@
 .chatbot-glow {
   animation: glow-pulse 2s ease-in-out infinite;
 }
+
+/* ==================== ADSTERRA AD STYLES ==================== */
+
+/* Base ad container */
+.ad-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1rem 0;
+  min-height: 50px;
+  overflow: hidden;
+}
+
+/* Sidebar ads - sticky positioning */
+.ad-sidebar {
+  position: sticky;
+  top: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Mobile-only ads (hidden on desktop) */
+.ad-mobile-only {
+  display: none !important;
+}
+
+/* Desktop-only ads (hidden on mobile) */
+.ad-desktop-only {
+  display: flex !important;
+}
+
+/* Responsive breakpoint */
+@media (max-width: 768px) {
+  .ad-mobile-only {
+    display: flex !important;
+  }
+  
+  .ad-desktop-only {
+    display: none !important;
+  }
+  
+  .ad-sidebar {
+    display: none;
+  }
+}
+
+/* Ad section dividers */
+.ad-section {
+  padding: 1rem 0;
+  border-top: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  margin: 1.5rem 0;
+}
+
+/* Native ad wrapper */
+.native-ad-wrapper {
+  background: linear-gradient(to right, transparent, hsl(var(--muted) / 0.3), transparent);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+/* Smartlink button hover effects */
+.smartlink-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.smartlink-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.smartlink-btn:hover::before {
+  left: 100%;
+}
+

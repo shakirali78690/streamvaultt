@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { SmartlinkDownloadApp, SmartlinkFooterCTA, SmartlinkExclusiveOffer } from "@/components/AdsterraAds";
 
 export function Footer() {
   const [email, setEmail] = useState("");
@@ -76,6 +77,11 @@ export function Footer() {
 
   return (
     <footer className="border-t border-border bg-card mt-20">
+      {/* Exclusive Offer Banner above footer content */}
+      <div className="container mx-auto px-4 pt-6">
+        <SmartlinkExclusiveOffer />
+      </div>
+
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {/* Quick Links */}
@@ -133,6 +139,10 @@ export function Footer() {
                 </li>
               ))}
             </ul>
+            {/* Download App Button */}
+            <div className="mt-4">
+              <SmartlinkDownloadApp />
+            </div>
           </div>
 
           {/* Social & Newsletter */}
@@ -263,6 +273,7 @@ export function Footer() {
         <div className="border-t border-border pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
             <p>© 2024 StreamVault. All rights reserved.</p>
+            <SmartlinkFooterCTA />
             <p>Your Premium Web Series Destination</p>
           </div>
         </div>

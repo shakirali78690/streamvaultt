@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CommentsSection } from "@/components/comments-section";
 import { Helmet } from "react-helmet-async";
 import type { Movie } from "@shared/schema";
+import { NativeBanner, Banner300x250, Banner468x60, SmartlinkCard } from "@/components/AdsterraAds";
 
 export default function WatchMovie() {
   const [, params] = useRoute("/watch-movie/:slug");
@@ -116,6 +117,9 @@ export default function WatchMovie() {
           </Button>
         </Link>
 
+        {/* Top Ad Banner */}
+        <Banner468x60 />
+
         <div className="grid grid-cols-1 gap-6">
           {/* Video Player */}
           <div className="bg-card rounded-lg overflow-hidden shadow-lg">
@@ -170,6 +174,11 @@ export default function WatchMovie() {
             </div>
           </div>
 
+          {/* Ad Banner - Above Recommendations */}
+          <div className="mt-8">
+            <NativeBanner />
+          </div>
+
           {/* Recommended Movies Section */}
           {recommendedMovies.length > 0 && (
             <div className="mt-8">
@@ -205,9 +214,15 @@ export default function WatchMovie() {
             </div>
           )}
 
-          {/* Adsterra Native Banner - Above Comments */}
-          <div className="mt-8 flex justify-center">
-            <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+          {/* More Ads - Between Recommendations and Comments */}
+          <div className="mt-8 flex flex-col md:flex-row gap-6 items-center justify-center">
+            <Banner300x250 />
+            <SmartlinkCard />
+          </div>
+
+          {/* Native Banner - Above Comments */}
+          <div className="mt-8">
+            <NativeBanner />
           </div>
 
           {/* Comments Section at Bottom */}

@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { ContentRow } from "@/components/content-row";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { NativeBanner, Banner300x250, Banner468x60, SmartlinkCard, SidebarAds } from "@/components/AdsterraAds";
 
 // Extract Google Drive ID from URL and generate thumbnail
 const getEpisodeThumbnail = (episode: Episode, showBackdrop?: string) => {
@@ -391,304 +392,326 @@ export default function ShowDetail() {
         </div>
       </div>
 
+      {/* Native Ad After Hero */}
+      <div className="container mx-auto px-4">
+        <NativeBanner />
+      </div>
+
       {/* Tabs Section */}
       <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="episodes" className="w-full">
-          <TabsList className="mb-4 md:mb-6">
-            <TabsTrigger value="episodes" data-testid="tab-episodes" className="text-xs md:text-sm">
-              Episodes
-            </TabsTrigger>
-            <TabsTrigger value="about" data-testid="tab-about" className="text-xs md:text-sm">
-              About
-            </TabsTrigger>
-            <TabsTrigger value="similar" data-testid="tab-similar" className="text-xs md:text-sm">
-              Similar Shows
-            </TabsTrigger>
-          </TabsList>
+        <div className="flex gap-8">
+          {/* Main Content */}
+          <div className="flex-1">
+            <Tabs defaultValue="episodes" className="w-full">
+              <TabsList className="mb-4 md:mb-6">
+                <TabsTrigger value="episodes" data-testid="tab-episodes" className="text-xs md:text-sm">
+                  Episodes
+                </TabsTrigger>
+                <TabsTrigger value="about" data-testid="tab-about" className="text-xs md:text-sm">
+                  About
+                </TabsTrigger>
+                <TabsTrigger value="similar" data-testid="tab-similar" className="text-xs md:text-sm">
+                  Similar Shows
+                </TabsTrigger>
+              </TabsList>
 
-          {/* Episodes Tab */}
-          <TabsContent value="episodes" className="space-y-6">
-            {/* Season Selector */}
-            {seasons.length > 1 && (
-              <div className="flex gap-2 flex-wrap">
-                {seasons.map((season) => (
-                  <Button
-                    key={season}
-                    variant={selectedSeason === season ? "default" : "outline"}
-                    onClick={() => setSelectedSeason(season)}
-                    data-testid={`button-season-${season}`}
-                    className="text-xs md:text-sm h-8 md:h-10"
-                  >
-                    Season {season}
-                  </Button>
-                ))}
-              </div>
-            )}
-
-            {/* Episodes List */}
-            {episodesLoading ? (
-              <div className="space-y-4">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="flex gap-4">
-                    <Skeleton className="w-64 aspect-video flex-shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-6 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                      <Skeleton className="h-4 w-full" />
-                    </div>
+              {/* Episodes Tab */}
+              <TabsContent value="episodes" className="space-y-6">
+                {/* Season Selector */}
+                {seasons.length > 1 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {seasons.map((season) => (
+                      <Button
+                        key={season}
+                        variant={selectedSeason === season ? "default" : "outline"}
+                        onClick={() => setSelectedSeason(season)}
+                        data-testid={`button-season-${season}`}
+                        className="text-xs md:text-sm h-8 md:h-10"
+                      >
+                        Season {season}
+                      </Button>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {seasonEpisodes.map((episode) => (
-                  <div
-                    key={episode.id}
-                    onClick={() => {
-                      const url = `/watch/${show.slug}?season=${episode.season}&episode=${episode.episodeNumber}`;
-                      console.log("Clicking episode - navigating to:", url);
-                      window.location.replace(url);
-                    }}
-                  >
-                    <Card className="overflow-hidden cursor-pointer group hover-elevate active-elevate-2 transition-all">
-                      <div className="flex gap-3 md:gap-4 p-0">
-                        {/* Thumbnail */}
-                        <div className="relative w-32 md:w-64 flex-shrink-0 aspect-video">
-                          <img
-                            src={getEpisodeThumbnail(episode, show.backdropUrl)}
-                            alt={episode.title}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Play className="w-8 md:w-12 h-8 md:h-12 text-primary fill-current" />
-                          </div>
-                        </div>
+                )}
 
-                        {/* Episode Info */}
-                        <div className="flex-1 py-3 md:py-4 pr-3 md:pr-4">
-                          <h3
-                            className="text-base md:text-xl font-semibold mb-1 md:mb-2 line-clamp-1"
-                            data-testid={`text-episode-title-${episode.id}`}
-                          >
-                            {episode.title}
-                          </h3>
-                          <p className="text-xs md:text-sm text-muted-foreground mb-2 md:mb-3">
-                            S{episode.season} E{episode.episodeNumber} • {episode.airDate} • {episode.duration}m
-                          </p>
-                          <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
-                            {episode.description}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
+                {/* Ad between season selector and episodes */}
+                <Banner468x60 />
 
-          {/* About Tab */}
-          <TabsContent value="about" className="space-y-6">
-            <div className="max-w-3xl space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Description</h3>
-                <p className="text-muted-foreground">{show.description}</p>
-              </div>
-
-              {/* Cast Grid with Photos */}
-              {show.castDetails && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Cast</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {JSON.parse(show.castDetails).map((member: { name: string; character: string; profileUrl: string | null }, index: number) => (
-                      <div key={index} className="text-center">
-                        <div className="aspect-square rounded-lg overflow-hidden bg-card mb-2">
-                          {member.profileUrl ? (
-                            <img
-                              src={member.profileUrl}
-                              alt={member.name}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-muted">
-                              <img
-                                src="https://static.vecteezy.com/system/resources/thumbnails/005/544/718/small/profile-icon-design-free-vector.jpg"
-                                alt={member.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          )}
+                {/* Episodes List */}
+                {episodesLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="flex gap-4">
+                        <Skeleton className="w-64 aspect-video flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-6 w-3/4" />
+                          <Skeleton className="h-4 w-1/2" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
-                        <p className="font-medium text-sm line-clamp-1">{member.name}</p>
-                        {member.character && (
-                          <p className="text-xs text-muted-foreground line-clamp-1">as {member.character}</p>
-                        )}
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Fallback to text cast if no castDetails */}
-              {!show.castDetails && show.cast && show.cast.trim() && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Cast</h3>
-                  <p className="text-muted-foreground">{show.cast}</p>
-                </div>
-              )}
-
-              {show.creators && show.creators.trim() && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Creators</h3>
-                  <p className="text-muted-foreground">
-                    {show.creators}
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Details</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Year:</span>{" "}
-                    <span className="font-medium">{show.year}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Rating:</span>{" "}
-                    <span className="font-medium">{show.rating}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Language:</span>{" "}
-                    <span className="font-medium">{show.language}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Seasons:</span>{" "}
-                    <span className="font-medium">{show.totalSeasons}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Production Companies */}
-              {productionCompanies.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Building2 className="w-5 h-5" />
-                    Production Companies
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {productionCompanies.map((company, index) => (
+                ) : (
+                  <div className="space-y-4">
+                    {seasonEpisodes.map((episode) => (
                       <div
-                        key={index}
-                        className="flex flex-col items-center text-center p-4 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                        key={episode.id}
+                        onClick={() => {
+                          const url = `/watch/${show.slug}?season=${episode.season}&episode=${episode.episodeNumber}`;
+                          console.log("Clicking episode - navigating to:", url);
+                          window.location.replace(url);
+                        }}
                       >
-                        {company.logoUrl ? (
-                          <img
-                            src={company.logoUrl}
-                            alt={company.name}
-                            className="h-12 w-auto object-contain mb-3 filter brightness-110"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center mb-3">
-                            <Building2 className="w-6 h-6 text-muted-foreground" />
+                        <Card className="overflow-hidden cursor-pointer group hover-elevate active-elevate-2 transition-all">
+                          <div className="flex gap-3 md:gap-4 p-0">
+                            {/* Thumbnail */}
+                            <div className="relative w-32 md:w-64 flex-shrink-0 aspect-video">
+                              <img
+                                src={getEpisodeThumbnail(episode, show.backdropUrl)}
+                                alt={episode.title}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Play className="w-8 md:w-12 h-8 md:h-12 text-primary fill-current" />
+                              </div>
+                            </div>
+
+                            {/* Episode Info */}
+                            <div className="flex-1 py-3 md:py-4 pr-3 md:pr-4">
+                              <h3
+                                className="text-base md:text-xl font-semibold mb-1 md:mb-2 line-clamp-1"
+                                data-testid={`text-episode-title-${episode.id}`}
+                              >
+                                {episode.title}
+                              </h3>
+                              <p className="text-xs md:text-sm text-muted-foreground mb-2 md:mb-3">
+                                S{episode.season} E{episode.episodeNumber} • {episode.airDate} • {episode.duration}m
+                              </p>
+                              <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
+                                {episode.description}
+                              </p>
+                            </div>
                           </div>
-                        )}
-                        <p className="font-medium text-sm">{company.name}</p>
-                        {company.country && (
-                          <p className="text-xs text-muted-foreground">{company.country}</p>
-                        )}
-                        {company.website && (
+                        </Card>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* About Tab */}
+              <TabsContent value="about" className="space-y-6">
+                <div className="max-w-3xl space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Description</h3>
+                    <p className="text-muted-foreground">{show.description}</p>
+                  </div>
+
+                  {/* Cast Grid with Photos */}
+                  {show.castDetails && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Cast</h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {JSON.parse(show.castDetails).map((member: { name: string; character: string; profileUrl: string | null }, index: number) => (
+                          <div key={index} className="text-center">
+                            <div className="aspect-square rounded-lg overflow-hidden bg-card mb-2">
+                              {member.profileUrl ? (
+                                <img
+                                  src={member.profileUrl}
+                                  alt={member.name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                  <img
+                                    src="https://static.vecteezy.com/system/resources/thumbnails/005/544/718/small/profile-icon-design-free-vector.jpg"
+                                    alt={member.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                            <p className="font-medium text-sm line-clamp-1">{member.name}</p>
+                            {member.character && (
+                              <p className="text-xs text-muted-foreground line-clamp-1">as {member.character}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fallback to text cast if no castDetails */}
+                  {!show.castDetails && show.cast && show.cast.trim() && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Cast</h3>
+                      <p className="text-muted-foreground">{show.cast}</p>
+                    </div>
+                  )}
+
+                  {show.creators && show.creators.trim() && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Creators</h3>
+                      <p className="text-muted-foreground">
+                        {show.creators}
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Details</h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Year:</span>{" "}
+                        <span className="font-medium">{show.year}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Rating:</span>{" "}
+                        <span className="font-medium">{show.rating}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Language:</span>{" "}
+                        <span className="font-medium">{show.language}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Seasons:</span>{" "}
+                        <span className="font-medium">{show.totalSeasons}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Production Companies */}
+                  {productionCompanies.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <Building2 className="w-5 h-5" />
+                        Production Companies
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {productionCompanies.map((company, index) => (
+                          <div
+                            key={index}
+                            className="flex flex-col items-center text-center p-4 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                          >
+                            {company.logoUrl ? (
+                              <img
+                                src={company.logoUrl}
+                                alt={company.name}
+                                className="h-12 w-auto object-contain mb-3 filter brightness-110"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+                                <Building2 className="w-6 h-6 text-muted-foreground" />
+                              </div>
+                            )}
+                            <p className="font-medium text-sm">{company.name}</p>
+                            {company.country && (
+                              <p className="text-xs text-muted-foreground">{company.country}</p>
+                            )}
+                            {company.website && (
+                              <a
+                                href={company.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                Official Website
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* External Links */}
+                  {(externalLinks.imdb || externalLinks.homepage || externalLinks.facebook || externalLinks.twitter || externalLinks.instagram) && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <ExternalLink className="w-5 h-5" />
+                        Official Links
+                      </h3>
+                      <div className="flex flex-wrap gap-3">
+                        {externalLinks.homepage && (
                           <a
-                            href={company.website}
+                            href={externalLinks.homepage}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                           >
-                            <ExternalLink className="w-3 h-3" />
+                            <Globe className="w-4 h-4" />
                             Official Website
                           </a>
                         )}
+                        {externalLinks.imdb && (
+                          <a
+                            href={externalLinks.imdb}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors font-medium"
+                          >
+                            <Star className="w-4 h-4" />
+                            IMDb
+                          </a>
+                        )}
+                        {externalLinks.facebook && (
+                          <a
+                            href={externalLinks.facebook}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
+                          >
+                            Facebook
+                          </a>
+                        )}
+                        {externalLinks.twitter && (
+                          <a
+                            href={externalLinks.twitter}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                          >
+                            X (Twitter)
+                          </a>
+                        )}
+                        {externalLinks.instagram && (
+                          <a
+                            href={externalLinks.instagram}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white rounded-lg hover:opacity-90 transition-opacity"
+                          >
+                            Instagram
+                          </a>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </TabsContent>
 
-              {/* External Links */}
-              {(externalLinks.imdb || externalLinks.homepage || externalLinks.facebook || externalLinks.twitter || externalLinks.instagram) && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <ExternalLink className="w-5 h-5" />
-                    Official Links
-                  </h3>
-                  <div className="flex flex-wrap gap-3">
-                    {externalLinks.homepage && (
-                      <a
-                        href={externalLinks.homepage}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                      >
-                        <Globe className="w-4 h-4" />
-                        Official Website
-                      </a>
-                    )}
-                    {externalLinks.imdb && (
-                      <a
-                        href={externalLinks.imdb}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors font-medium"
-                      >
-                        <Star className="w-4 h-4" />
-                        IMDb
-                      </a>
-                    )}
-                    {externalLinks.facebook && (
-                      <a
-                        href={externalLinks.facebook}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
-                      >
-                        Facebook
-                      </a>
-                    )}
-                    {externalLinks.twitter && (
-                      <a
-                        href={externalLinks.twitter}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-                      >
-                        X (Twitter)
-                      </a>
-                    )}
-                    {externalLinks.instagram && (
-                      <a
-                        href={externalLinks.instagram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white rounded-lg hover:opacity-90 transition-opacity"
-                      >
-                        Instagram
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </TabsContent>
+              {/* Similar Shows Tab */}
+              <TabsContent value="similar">
+                {similarShows.length > 0 ? (
+                  <ContentRow title="" shows={similarShows} orientation="landscape" />
+                ) : (
+                  <p className="text-muted-foreground">No similar shows found.</p>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
 
-          {/* Similar Shows Tab */}
-          <TabsContent value="similar">
-            {similarShows.length > 0 ? (
-              <ContentRow title="" shows={similarShows} orientation="landscape" />
-            ) : (
-              <p className="text-muted-foreground">No similar shows found.</p>
-            )}
-          </TabsContent>
-        </Tabs>
+          {/* Sidebar Ads */}
+          <SidebarAds />
+        </div>
+
+        {/* Bottom Ads */}
+        <div className="mt-8 flex flex-col md:flex-row gap-6 items-center justify-center">
+          <Banner300x250 />
+          <SmartlinkCard />
+        </div>
       </div>
     </div>
   );

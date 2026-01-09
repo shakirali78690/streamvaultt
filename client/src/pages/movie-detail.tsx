@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Movie, BlogPost } from "@shared/schema";
+import { SidebarAds, NativeBanner, Banner300x250, Banner468x60, SmartlinkCard } from "@/components/AdsterraAds";
 
 export default function MovieDetail() {
   const [, params] = useRoute("/movie/:slug");
@@ -355,197 +356,212 @@ export default function MovieDetail() {
 
       {/* Content Section */}
       <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl">
-          {/* Description */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Overview</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              {movie.description}
-            </p>
-          </div>
+        <div className="flex gap-8">
+          {/* Main Content */}
+          <div className="flex-1 max-w-4xl">
+            {/* Native Ad at top */}
+            <NativeBanner />
 
-          {/* Cast Grid with Photos */}
-          {movie.castDetails && (
+            {/* Description */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4">Cast</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {JSON.parse(movie.castDetails).map((member: { name: string; character: string; profileUrl: string | null }, index: number) => (
-                  <div key={index} className="text-center">
-                    <div className="aspect-square rounded-lg overflow-hidden bg-card mb-2">
-                      {member.profileUrl ? (
-                        <img
-                          src={member.profileUrl}
-                          alt={member.name}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-muted">
+              <h2 className="text-2xl font-bold mb-4">Overview</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                {movie.description}
+              </p>
+            </div>
+
+            {/* Cast Grid with Photos */}
+            {movie.castDetails && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Cast</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {JSON.parse(movie.castDetails).map((member: { name: string; character: string; profileUrl: string | null }, index: number) => (
+                    <div key={index} className="text-center">
+                      <div className="aspect-square rounded-lg overflow-hidden bg-card mb-2">
+                        {member.profileUrl ? (
                           <img
-                            src="https://static.vecteezy.com/system/resources/thumbnails/005/544/718/small/profile-icon-design-free-vector.jpg"
+                            src={member.profileUrl}
                             alt={member.name}
                             className="w-full h-full object-cover"
+                            loading="lazy"
                           />
-                        </div>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-muted">
+                            <img
+                              src="https://static.vecteezy.com/system/resources/thumbnails/005/544/718/small/profile-icon-design-free-vector.jpg"
+                              alt={member.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <p className="font-medium text-sm line-clamp-1">{member.name}</p>
+                      {member.character && (
+                        <p className="text-xs text-muted-foreground line-clamp-1">as {member.character}</p>
                       )}
                     </div>
-                    <p className="font-medium text-sm line-clamp-1">{member.name}</p>
-                    {member.character && (
-                      <p className="text-xs text-muted-foreground line-clamp-1">as {member.character}</p>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Fallback to text cast if no castDetails */}
-          {!movie.castDetails && movie.cast && (
+            {/* Fallback to text cast if no castDetails */}
+            {!movie.castDetails && movie.cast && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Cast</h2>
+                <p className="text-muted-foreground">{movie.cast}</p>
+              </div>
+            )}
+
+            {/* Directors */}
+            {movie.directors && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Directors</h2>
+                <p className="text-muted-foreground">{movie.directors}</p>
+              </div>
+            )}
+
+            {/* Details */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4">Cast</h2>
-              <p className="text-muted-foreground">{movie.cast}</p>
+              <h2 className="text-2xl font-bold mb-4">Details</h2>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Language:</span>{" "}
+                  <span className="font-medium">{movie.language}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Year:</span>{" "}
+                  <span className="font-medium">{movie.year}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Duration:</span>{" "}
+                  <span className="font-medium">{movie.duration} minutes</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Rating:</span>{" "}
+                  <span className="font-medium">{movie.rating}</span>
+                </div>
+              </div>
             </div>
-          )}
 
-          {/* Directors */}
-          {movie.directors && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4">Directors</h2>
-              <p className="text-muted-foreground">{movie.directors}</p>
-            </div>
-          )}
+            {/* Production Companies */}
+            {productionCompanies.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <Building2 className="w-6 h-6" />
+                  Production Companies
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {productionCompanies.map((company, index) => (
+                    <div
+                      key={index}
+                      className="flex flex-col items-center text-center p-4 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      {company.logoUrl ? (
+                        <img
+                          src={company.logoUrl}
+                          alt={company.name}
+                          className="h-12 w-auto object-contain mb-3 filter brightness-110"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+                          <Building2 className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <p className="font-medium text-sm">{company.name}</p>
+                      {company.country && (
+                        <p className="text-xs text-muted-foreground">{company.country}</p>
+                      )}
+                      {company.website && (
+                        <a
+                          href={company.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Official Website
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          {/* Details */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Details</h2>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Language:</span>{" "}
-                <span className="font-medium">{movie.language}</span>
+            {/* External Links */}
+            {(externalLinks.imdb || externalLinks.homepage || externalLinks.facebook || externalLinks.twitter || externalLinks.instagram) && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                  <ExternalLink className="w-6 h-6" />
+                  Official Links
+                </h2>
+                <div className="flex flex-wrap gap-3">
+                  {externalLinks.homepage && (
+                    <a
+                      href={externalLinks.homepage}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      <Globe className="w-4 h-4" />
+                      Official Website
+                    </a>
+                  )}
+                  {externalLinks.imdb && (
+                    <a
+                      href={externalLinks.imdb}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors font-medium"
+                    >
+                      <Star className="w-4 h-4" />
+                      IMDb
+                    </a>
+                  )}
+                  {externalLinks.facebook && (
+                    <a
+                      href={externalLinks.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
+                    >
+                      Facebook
+                    </a>
+                  )}
+                  {externalLinks.twitter && (
+                    <a
+                      href={externalLinks.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                    >
+                      X (Twitter)
+                    </a>
+                  )}
+                  {externalLinks.instagram && (
+                    <a
+                      href={externalLinks.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white rounded-lg hover:opacity-90 transition-opacity"
+                    >
+                      Instagram
+                    </a>
+                  )}
+                </div>
               </div>
-              <div>
-                <span className="text-muted-foreground">Year:</span>{" "}
-                <span className="font-medium">{movie.year}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Duration:</span>{" "}
-                <span className="font-medium">{movie.duration} minutes</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Rating:</span>{" "}
-                <span className="font-medium">{movie.rating}</span>
-              </div>
+            )}
+
+            {/* Bottom Ad */}
+            <Banner468x60 />
+            <div className="my-6">
+              <SmartlinkCard />
             </div>
           </div>
 
-          {/* Production Companies */}
-          {productionCompanies.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                <Building2 className="w-6 h-6" />
-                Production Companies
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {productionCompanies.map((company, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col items-center text-center p-4 bg-card border border-border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    {company.logoUrl ? (
-                      <img
-                        src={company.logoUrl}
-                        alt={company.name}
-                        className="h-12 w-auto object-contain mb-3 filter brightness-110"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center mb-3">
-                        <Building2 className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                    )}
-                    <p className="font-medium text-sm">{company.name}</p>
-                    {company.country && (
-                      <p className="text-xs text-muted-foreground">{company.country}</p>
-                    )}
-                    {company.website && (
-                      <a
-                        href={company.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        Official Website
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* External Links */}
-          {(externalLinks.imdb || externalLinks.homepage || externalLinks.facebook || externalLinks.twitter || externalLinks.instagram) && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                <ExternalLink className="w-6 h-6" />
-                Official Links
-              </h2>
-              <div className="flex flex-wrap gap-3">
-                {externalLinks.homepage && (
-                  <a
-                    href={externalLinks.homepage}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                  >
-                    <Globe className="w-4 h-4" />
-                    Official Website
-                  </a>
-                )}
-                {externalLinks.imdb && (
-                  <a
-                    href={externalLinks.imdb}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors font-medium"
-                  >
-                    <Star className="w-4 h-4" />
-                    IMDb
-                  </a>
-                )}
-                {externalLinks.facebook && (
-                  <a
-                    href={externalLinks.facebook}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
-                  >
-                    Facebook
-                  </a>
-                )}
-                {externalLinks.twitter && (
-                  <a
-                    href={externalLinks.twitter}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-                  >
-                    X (Twitter)
-                  </a>
-                )}
-                {externalLinks.instagram && (
-                  <a
-                    href={externalLinks.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white rounded-lg hover:opacity-90 transition-opacity"
-                  >
-                    Instagram
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Sidebar Ads */}
+          <SidebarAds />
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import { CommentsSection } from "@/components/comments-section";
 import { Helmet } from "react-helmet-async";
 import type { Show, Episode } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { NativeBanner, Banner300x250, Banner468x60, SmartlinkCard, Banner160x300 } from "@/components/AdsterraAds";
 
 export default function Watch() {
   const [, params] = useRoute("/watch/:slug");
@@ -163,6 +164,9 @@ export default function Watch() {
           </Button>
         </Link>
 
+        {/* Top Ad Banner */}
+        <Banner468x60 />
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Video Player */}
           <div className="lg:col-span-2">
@@ -270,12 +274,19 @@ export default function Watch() {
                 </p>
               )}
             </div>
+
+            {/* Sidebar Ads */}
+            <div className="mt-6 space-y-4">
+              <Banner300x250 />
+              <SmartlinkCard />
+              <Banner160x300 />
+            </div>
           </div>
         </div>
 
-        {/* Adsterra Native Banner - Above Comments */}
-        <div className="mt-8 flex justify-center">
-          <div id="container-326e4e570b95e9b55f432cac93890441"></div>
+        {/* Native Banner - Above Comments */}
+        <div className="mt-8">
+          <NativeBanner />
         </div>
 
         {/* Comments Section - Mobile only (below Up Next) */}

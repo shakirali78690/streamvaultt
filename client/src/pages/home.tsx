@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SEO } from "@/components/seo";
 import type { Show, Movie, ViewingProgress } from "@shared/schema";
 import { useMemo } from "react";
+import { NativeBanner, Banner300x250, Banner468x60, SmartlinkCard, SmartlinkWinPromo, SmartlinkPremiumBanner, SmartlinkReferral } from "@/components/AdsterraAds";
 
 export default function Home() {
   const { data: shows, isLoading: showsLoading } = useQuery<Show[]>({
@@ -62,7 +63,7 @@ export default function Home() {
 
   // Combine shows and movies
   const allContent: (Show | Movie)[] = [...(shows || []), ...(movies || [])];
-  
+
   const featured = allContent.filter((item) => item.featured) || [];
   const trending = allContent.filter((item) => item.trending) || [];
   const action = allContent.filter((item) => item.genres?.toLowerCase().includes("action")) || [];
@@ -72,17 +73,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <SEO 
+      <SEO
         title="Free Movies Online | Watch TV Shows Free | HD Streaming"
         description="Watch 200+ movies & TV shows free in HD. No registration required. Stream Hollywood, Bollywood & international content instantly on any device."
         canonical="https://streamvault.live"
       />
-      
+
       {/* Hero Carousel */}
       {featured.length > 0 && <HeroCarousel shows={featured} />}
 
       {/* Content Rows */}
       <div className="container mx-auto py-8 space-y-12">
+        {/* Native Ad after Hero */}
+        <NativeBanner />
+
         {trending.length > 0 && (
           <ContentRow
             title="Trending Now"
@@ -90,6 +94,11 @@ export default function Home() {
             orientation="landscape"
           />
         )}
+
+        {/* Ad after Trending */}
+        <div className="flex justify-center">
+          <Banner300x250 />
+        </div>
 
         {continueWatching.length > 0 && (
           <ContentRow
@@ -104,13 +113,24 @@ export default function Home() {
           <ContentRow title="Action & Thriller" shows={action} />
         )}
 
+        {/* Mid-page Ad */}
+        <Banner468x60 />
+
         {drama.length > 0 && <ContentRow title="Drama & Romance" shows={drama} />}
 
         {comedy.length > 0 && <ContentRow title="Comedy" shows={comedy} />}
 
+        {/* Native Ad */}
+        <NativeBanner />
+
         {horror.length > 0 && (
           <ContentRow title="Horror & Mystery" shows={horror} />
         )}
+
+        {/* Win Promo - High visibility */}
+        <div className="max-w-lg mx-auto">
+          <SmartlinkWinPromo />
+        </div>
 
         {allContent.length > 0 && (
           <ContentRow
@@ -119,6 +139,18 @@ export default function Home() {
             orientation="landscape"
           />
         )}
+
+        {/* Premium Banner - Full width */}
+        <SmartlinkPremiumBanner />
+
+        {/* Referral and Special Offer side by side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+          <SmartlinkReferral />
+          <SmartlinkCard />
+        </div>
+
+        {/* Bottom Ad */}
+        <Banner300x250 />
       </div>
     </div>
   );
